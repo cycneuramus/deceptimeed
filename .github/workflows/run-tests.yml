@@ -1,0 +1,27 @@
+name: Run tests
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '**.nim'
+  pull_request:
+    paths:
+      - '**.nim'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        nim:
+          - '2.0.0'
+          - 'stable'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup nim
+        uses: jiro4989/setup-nim-action@v2
+        with:
+          nim-version: ${{ matrix.nim }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: nimble test -y
