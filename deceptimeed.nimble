@@ -10,3 +10,6 @@ bin = @["deceptimeed"]
 # Dependencies
 
 requires "nim >= 2.0.0"
+
+task build, "Builds the project with SSL support":
+  exec "nim c -d:release -d:ssl src/deceptimeed.nim"
