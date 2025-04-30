@@ -1,6 +1,6 @@
 # Package
 
-version = "0.1.0" # x-release-please-version
+version = "0.1.1" # x-release-please-version
 author = "cycneuramus"
 description = "Loads IP blocklists into nftables from plain text or JSON feeds"
 license = "AGPL-3.0-only"
