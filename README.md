@@ -52,7 +52,17 @@ This is a utility program for loading IP blocklists into `nftables` from HTTP en
 
 ## Installation
 
-`nim c -d:release -d:ssl src/deceptimeed.nim`
+**Using Nimble**
+
+```bash
+nimble install deceptimeed
+```
+
+**Compiling from source**
+
+```bash
+nim c -d:release -d:ssl src/deceptimeed.nim
+```
 
 ## Usage
 
