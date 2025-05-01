@@ -48,6 +48,9 @@ proc ensureRuleset() =
   if not nft(boot):
     quit("bootstrap failed (nft error)", 1)
 
+template isJson(body: string): bool =
+  body[0] in {'{', '['}
+
 template baseIp(s: string): string =
   s.split("/", 1)[0]
 
@@ -65,25 +68,25 @@ func parsePlain*(body: string): seq[string] =
       result.add(trimmed)
   result = result.deduplicate
 
-func walkJson(node: JsonNode, ips: var seq[string]) =
+func parseJson(node: JsonNode, ips: var seq[string]) =
   case node.kind
   of JString:
     if node.str.isIp:
       ips.add(node.str)
   of JArray:
     for i in node.items:
-      walkJson(i, ips)
+      parseJson(i, ips)
   of JObject:
     for _, v in node:
-      walkJson(v, ips)
+      parseJson(v, ips)
   else:
     discard
 
-proc parseFeed*(body: string): seq[string] =
+proc processFeed*(body: string): seq[string] =
   let trimmed = body.strip
-  if trimmed.len > 0 and (trimmed[0] in {'{', '['}): # JSON heuristic
+  if trimmed.len > 0 and trimmed.isJson:
     var ips: seq[string]
-    walkJson(parseJson(trimmed), ips)
+    parseJson(parseJson(trimmed), ips)
     ips.deduplicate
   else:
     parsePlain(body)
@@ -119,7 +122,7 @@ when isMainModule:
 
   let feedUrl = getFeedUrl()
   let raw = newHttpClient(timeout = 10_000).getContent(feedUrl)
-  let ips = parseFeed(raw)
+  let ips = processFeed(raw)
 
   if ips.len > maxElems:
     quit("IP feed too large", 1)
