@@ -151,7 +151,7 @@ func buildBatch*(ips: seq[string]): string =
 
 when isMainModule:
   if getuid() != Uid(0):
-    quit("Must run as root or with CAP_NET_ADMIN", 1)
+    quit("Must run as root", 1)
 
   ensureRuleset()
 

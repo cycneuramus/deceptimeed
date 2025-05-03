@@ -1,13 +1,13 @@
 # Deceptimeed
 
-> **Meed** (/miːd/), *n.*  
-> 1 : *an earned reward or wage*  
+> **Meed** (/miːd/), *n.*\
+> 1 : *an earned reward or wage*\
 > 2 : *a fitting return or recompense*
 
-This is a utility program for loading IP blocklists into `nftables` from HTTP endpoints exposing plain text or JSON feeds. While primarily meant as a companion helper to [Deceptifeed](https://github.com/r-smith/deceptifeed) and its `/plain` and `/json` endpoints, it should be able to support any source feed as long as either of the following criteria are met: 
+This is a utility program for loading IP blocklists into `nftables` from HTTP endpoints exposing plain text or JSON feeds. While primarily meant as a companion helper to [Deceptifeed](https://github.com/r-smith/deceptifeed) and its `/plain` and `/json` endpoints, it should be able to support any source feed as long as either of the following criteria are met:
 
-+ Plain text with one IP address per line
-+ JSON data with IPs as string values
+- Plain text with one IP address per line
+- JSON data with IPs as string values
 
 ## Example feeds
 
@@ -48,7 +48,8 @@ This is a utility program for loading IP blocklists into `nftables` from HTTP en
 
 > [!NOTE]
 > The structure of the JSON data doesn't matter since the parser extracts any strings representing valid IP addresses.
----
+
+______________________________________________________________________
 
 ## Installation
 
@@ -70,7 +71,7 @@ nim c -d:release -d:ssl src/deceptimeed.nim
 deceptimeed <feed-url>
 ```
 
-Requires root or `CAP_NET_ADMIN`.
+Requires root.
 
 ## Testing
 
@@ -82,29 +83,31 @@ hping3 -S -a 1.2.3.4 <your-server-ip>
 
 Replace `<your-server-ip>` with the IP of the machine using `deceptimeed`. The packet will be dropped silently if the blocking is effective.
 
----
+______________________________________________________________________
 
 ## How It Works
 
-1. **Ruleset Setup**  
+1. **Ruleset Setup**\
    On first run, creates:
+
    - `table inet blocklist`
    - `set bad_ip4` (IPv4) and `set bad_ip6` (IPv6)
    - `chain preraw` with drop rules matching source addresses in those sets
 
-2. **Feed Download**  
+1. **Feed Download**\
    Pulls a plaintext or JSON IP feed from a configured endpoint.
 
-3. **Parsing and Filtering**  
+1. **Parsing and Filtering**
+
    - Extracts IP addresses (IPv4 and IPv6).
    - Removes invalid entries and duplicates.
    - Caps total at 100 000 IPs (hard-coded for now).
 
-4. **Atomic Update**  
-   Replaces the contents of both sets using a single `nft -f` batch.  
+1. **Atomic Update**\
+   Replaces the contents of both sets using a single `nft -f` batch.\
    If the batch fails, the current set contents remain unchanged.
 
----
+______________________________________________________________________
 
 ## Configuration
 
