@@ -1,19 +1,25 @@
 import std/[strformat, strutils, unittest]
+import ../src/deceptimeed/[config, feed, nft]
 import ../src/deceptimeed
 
-suite "core helpers":
-  test "isIp":
+suite "main":
+  test "Parse feed URL":
+    let url = "https://honeypot.mydomain.com/plain"
+    check isValidUrl(url) == true
+
+suite "feed":
+  test "Is IP address":
     check "1.2.3.4".isIp
     check "2001:db8::1".isIp
     check not "999.999.999.999".isIp
     check "10.0.0.0/24".isIp
     check "2001:db8::/32".isIp
 
-  test "plain feed":
+  test "Plain feed":
     let ips = "1.1.1.1\ntrash\n2.2.2.2\n1.1.1.1\n"
     check parseFeed(ips) == @["1.1.1.1", "2.2.2.2"]
 
-  test "plain feed with line feeds":
+  test "Plain feed with line feeds":
     let ips = "1.1.1.1\r\ntrash\r\n2.2.2.2\r\n1.1.1.1\r\n"
     check parseFeed(ips) == @["1.1.1.1", "2.2.2.2"]
 
@@ -25,30 +31,31 @@ suite "core helpers":
     let json = "\n  [\"1.1.1.1\", \"2.2.2.2\", \"1.1.1.1\"]"
     check parseFeed(json) == @["1.1.1.1", "2.2.2.2"]
 
-  test "splitIps":
+  test "Split IPs into v4, v6":
     let (v4, v6) = splitIps(@["1.1.1.1", "2001:db8::1", "8.8.8.8/32", "fd00::/8"])
     check v4 == @["1.1.1.1", "8.8.8.8/32"]
     check v6 == @["2001:db8::1", "fd00::/8"]
 
-  test "invalid literals are ignored":
+  test "Invalid entries are ignored":
     let (v4, v6) = splitIps(@["not-an-ip", "300.300.300.300"])
     check v4.len == 0 and v6.len == 0
 
-  test "batch builder":
+suite "nft":
+  test "Build batch":
     let batch = buildBatch(@["1.1.1.1", "dead:beef::1"])
     check batch.contains(fmt"flush set inet {tbl} {set4}")
     check batch.contains(fmt"flush set inet {tbl} {set6}")
     check batch.contains("{ 1.1.1.1 }")
     check batch.contains("{ dead:beef::1 }")
 
-  test "empty batch":
+  test "Empty batch":
     check buildBatch(@[]) ==
       fmt"""
         flush set inet {tbl} {set4}
         flush set inet {tbl} {set6}
       """.dedent
 
-  test "nftables IP set retrieval":
+  test "Extract nftables IPs":
     let mockNftOutput =
       """
         {
@@ -84,7 +91,7 @@ suite "core helpers":
 
     check nftIps(mockNftOutput) == ["1.2.3.4", "5.6.7.8", "192.168.0.1"]
 
-  test "feed vs nft yields only new IPs":
+  test "Yield only new IPs":
     let feedIps = @["10.0.0.1", "192.168.0.1", "203.0.113.5"]
     let nftIps = @["192.168.0.1", "198.51.100.7"]
     let newIps = feedIps.diff(nftIps)
