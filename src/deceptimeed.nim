@@ -84,12 +84,6 @@ template isIp*(s: string): bool =
   except ValueError:
     false
 
-func ingestPlain*(body: string): seq[string] =
-  for ln in body.splitLines:
-    let trimmed = ln.strip
-    if trimmed.isIp:
-      result.add(trimmed)
-
 func ingestJson(node: JsonNode, ips: var seq[string]) =
   case node.kind
   of JString:
@@ -114,14 +108,17 @@ proc getNftIps*(nftOutput: string): seq[string] =
   ingestJson(parseJson(nftOutput), ips)
   result = ips
 
-proc processFeed*(body: string): seq[string] =
-  let trimmed = body.strip
-  if trimmed.len > 0 and trimmed.isJson:
+proc parseFeed*(body: string): seq[string] =
+  let feed = body.strip
+  if feed.len == 0:
+    return
+
+  if feed.isJson:
     var ips: seq[string]
-    ingestJson(parseJson(trimmed), ips)
+    ingestJson(parseJson(feed), ips)
     result = ips.deduplicate
   else:
-    result = ingestPlain(body).deduplicate
+    result = feed.splitLines.filterIt(it.strip.isIp).deduplicate
 
 proc splitIps*(ips: seq[string]): (seq[string], seq[string]) =
   var v4, v6: seq[string]
@@ -158,7 +155,7 @@ when isMainModule:
   let
     feedUrl = getFeedUrl()
     raw = newHttpClient(timeout = 10_000).getContent(feedUrl)
-    feedIps = processFeed(raw)
+    feedIps = parseFeed(raw)
 
     nftTable = getTable()
     nftIps = getNftIps(nftTable)

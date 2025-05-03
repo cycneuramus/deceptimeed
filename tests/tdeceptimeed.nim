@@ -11,19 +11,19 @@ suite "core helpers":
 
   test "plain feed":
     let ips = "1.1.1.1\ntrash\n2.2.2.2\n1.1.1.1\n"
-    check processFeed(ips) == @["1.1.1.1", "2.2.2.2"]
+    check parseFeed(ips) == @["1.1.1.1", "2.2.2.2"]
 
   test "plain feed with line feeds":
     let ips = "1.1.1.1\r\ntrash\r\n2.2.2.2\r\n1.1.1.1\r\n"
-    check processFeed(ips) == @["1.1.1.1", "2.2.2.2"]
+    check parseFeed(ips) == @["1.1.1.1", "2.2.2.2"]
 
   test "JSON feed":
     let json = """{ "a": "10.0.0.1","b": ["dead:beef::1", {"x":"8.8.8.8"}] }"""
-    check processFeed(json) == @["10.0.0.1", "dead:beef::1", "8.8.8.8"]
+    check parseFeed(json) == @["10.0.0.1", "dead:beef::1", "8.8.8.8"]
 
   test "JSON feed with leading whitespace":
     let json = "\n  [\"1.1.1.1\", \"2.2.2.2\", \"1.1.1.1\"]"
-    check processFeed(json) == @["1.1.1.1", "2.2.2.2"]
+    check parseFeed(json) == @["1.1.1.1", "2.2.2.2"]
 
   test "splitIps":
     let (v4, v6) = splitIps(@["1.1.1.1", "2001:db8::1", "8.8.8.8/32", "fd00::/8"])
