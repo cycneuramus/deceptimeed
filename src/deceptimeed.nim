@@ -12,7 +12,7 @@ const
   prio = "-300"
   maxElems = 100_000
 
-proc getFeedUrl(): string =
+proc cliFeedUrl(): string =
   if paramCount() != 1:
     quit("Usage: deceptimeed <url>", 1)
 
@@ -48,13 +48,10 @@ proc nft(batch: string) =
   except OSError as e:
     quit(fmt"nft command failed: {e.msg}", 1)
 
-proc getTable(): string =
+proc nftTable(): string =
   run("nft", @["-j", "list", "table", "inet", tbl])
 
 proc ensureRuleset() =
-  if "Error" notin getTable():
-    return
-
   echo "Bootstrapping nftables ruleset"
   let boot =
     """
@@ -98,12 +95,12 @@ func ingestJson(node: JsonNode, ips: var seq[string]) =
   else:
     discard
 
-func getNewIps*(feedIps, nftIps: seq[string]): seq[string] =
+func diff*(feedIps, nftIps: seq[string]): seq[string] =
   for ip in feedIps:
     if ip notin nftIps:
       result.add(ip)
 
-proc getNftIps*(nftOutput: string): seq[string] =
+proc nftIps*(nftOutput: string): seq[string] =
   var ips: seq[string]
   ingestJson(parseJson(nftOutput), ips)
   result = ips
@@ -150,16 +147,17 @@ when isMainModule:
   if getuid() != Uid(0):
     quit("Must run as root", 1)
 
-  ensureRuleset()
+  if "Error" in nftTable():
+    ensureRuleset()
 
   let
-    feedUrl = getFeedUrl()
+    feedUrl = cliFeedUrl()
     raw = newHttpClient(timeout = 10_000).getContent(feedUrl)
     feedIps = parseFeed(raw)
 
-    nftTable = getTable()
-    nftIps = getNftIps(nftTable)
-    newIps = getNewIps(feedIps, nftIps)
+    tblState = nftTable()
+    curIps = nftIps(tblState)
+    newIps = feedIps.diff(curIps)
 
   if newIps.len == 0:
     quit("No new IPs to add", 0)
@@ -174,4 +172,6 @@ when isMainModule:
     nft(batch)
   except OSError as e:
     quit(fmt"nft load failed: {e.msg}", 1)
-  echo(fmt"{newIps.len} IPs added to blocklist ({nftIps.len + newIps.len} total)")
+
+  let totalIps = curIps.len + newIps.len
+  echo(fmt"{newIps.len} IPs added to blocklist ({totalIps} total)")

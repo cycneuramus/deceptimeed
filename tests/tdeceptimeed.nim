@@ -82,10 +82,10 @@ suite "core helpers":
         }
       """.dedent
 
-    check getNftIps(mockNftOutput) == ["1.2.3.4", "5.6.7.8", "192.168.0.1"]
+    check nftIps(mockNftOutput) == ["1.2.3.4", "5.6.7.8", "192.168.0.1"]
 
   test "feed vs nft yields only new IPs":
     let feedIps = @["10.0.0.1", "192.168.0.1", "203.0.113.5"]
     let nftIps = @["192.168.0.1", "198.51.100.7"]
-    let newIps = getNewIps(feedIps, nftIps)
+    let newIps = feedIps.diff(nftIps)
     check newIps == @["10.0.0.1", "203.0.113.5"]
