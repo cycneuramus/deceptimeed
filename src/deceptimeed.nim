@@ -155,14 +155,15 @@ when isMainModule:
 
   ensureRuleset()
 
-  let feedUrl = getFeedUrl()
-  let raw = newHttpClient(timeout = 10_000).getContent(feedUrl)
-  let feedIps = processFeed(raw)
+  let
+    feedUrl = getFeedUrl()
+    raw = newHttpClient(timeout = 10_000).getContent(feedUrl)
+    feedIps = processFeed(raw)
 
-  let nftTable = getTable()
-  let nftIps = getNftIps(nftTable)
+    nftTable = getTable()
+    nftIps = getNftIps(nftTable)
+    newIps = getNewIps(feedIps, nftIps)
 
-  let newIps = getNewIps(feedIps, nftIps)
   if newIps.len == 0:
     quit("No new IPs to add", 0)
 
