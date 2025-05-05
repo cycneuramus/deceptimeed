@@ -41,18 +41,20 @@ suite "feed":
     check v4.len == 0 and v6.len == 0
 
 suite "nft":
+  let cfg = defaultConfig()
+
   test "Build batch":
-    let batch = buildBatch(@["1.1.1.1", "dead:beef::1"])
-    check batch.contains(fmt"flush set inet {tbl} {set4}")
-    check batch.contains(fmt"flush set inet {tbl} {set6}")
+    let batch = buildBatch(@["1.1.1.1", "dead:beef::1"], cfg)
+    check batch.contains(fmt"flush set inet {cfg.tbl} {cfg.set4}")
+    check batch.contains(fmt"flush set inet {cfg.tbl} {cfg.set6}")
     check batch.contains("{ 1.1.1.1 }")
     check batch.contains("{ dead:beef::1 }")
 
   test "Empty batch":
-    check buildBatch(@[]) ==
+    check buildBatch(@[], cfg) ==
       fmt"""
-        flush set inet {tbl} {set4}
-        flush set inet {tbl} {set6}
+        flush set inet {cfg.tbl} {cfg.set4}
+        flush set inet {cfg.tbl} {cfg.set6}
       """.dedent
 
   test "Extract nftables IPs":

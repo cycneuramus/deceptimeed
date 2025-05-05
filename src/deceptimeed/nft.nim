@@ -7,8 +7,8 @@ proc run*(cmd: string, args: seq[string]): string =
   except OSError as e:
     quit(fmt"Error executing command: {e.msg}", 1)
 
-proc nftTable*(): string =
-  run("nft", @["-j", "list", "table", "inet", tbl])
+proc nftTable*(cfg: Config): string =
+  run("nft", @["-j", "list", "table", "inet", cfg.tbl])
 
 proc nftIps*(nftOutput: string): seq[string] =
   var ips: seq[string]
@@ -35,7 +35,7 @@ proc nft*(batch: string) =
   except OSError as e:
     quit(fmt"nft command failed: {e.msg}", 1)
 
-proc ensureRuleset*() =
+proc ensureRuleset*(cfg: Config) =
   echo "Bootstrapping nftables ruleset"
   let boot =
     """
@@ -46,21 +46,21 @@ proc ensureRuleset*() =
       add rule  inet $1 $4 ip  saddr @$2 drop
       add rule  inet $1 $4 ip6 saddr @$3 drop
     """.dedent %
-    [tbl, set4, set6, chain, prio]
+    [cfg.tbl, cfg.set4, cfg.set6, cfg.chain, cfg.prio]
   try:
     nft(boot)
   except OSError as e:
     quit(fmt"nft bootstrap failed: {e.msg}", 1)
 
-func buildBatch*(ips: seq[string]): string =
+func buildBatch*(ips: seq[string], cfg: Config): string =
   result =
     fmt"""
-      flush set inet {tbl} {set4}
-      flush set inet {tbl} {set6}
+      flush set inet {cfg.tbl} {cfg.set4}
+      flush set inet {cfg.tbl} {cfg.set6}
     """.dedent
 
   let (ips4, ips6) = splitIps(ips)
   if ips4.len > 0:
-    result.add(&"add element inet {tbl} {set4} {{ {ips4.join(\", \")} }}\n")
+    result.add(&"add element inet {cfg.tbl} {cfg.set4} {{ {ips4.join(\", \")} }}\n")
   if ips6.len > 0:
-    result.add(&"add element inet {tbl} {set6} {{ {ips6.join(\", \")} }}\n")
+    result.add(&"add element inet {cfg.tbl} {cfg.set6} {{ {ips6.join(\", \")} }}\n")
