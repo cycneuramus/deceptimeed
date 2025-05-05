@@ -4,10 +4,9 @@
   "pull-request-title-pattern": "chore: release ${version}",
   "include-v-in-tag": true,
   "always-update": true,
+  "changelog-path": ".github/CHANGELOG.md",
   "packages": {
     ".": {}
   },
-  "extra-files": [
-    "deceptimeed.nimble"
-  ]
+  "extra-files": ["deceptimeed.nimble"]
 }
