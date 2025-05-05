@@ -1,4 +1,4 @@
-import std/[httpclient, net, os, posix, strformat, strutils, uri]
+import std/[net, os, posix, strformat, strutils, uri]
 import ./deceptimeed/[config, feed, nft]
 
 func isValidUrl*(url: string): bool =
@@ -21,7 +21,7 @@ when isMainModule:
     ensureRuleset(cfg)
 
   let
-    raw = newHttpClient(timeout = 10_000).getContent(feedUrl)
+    raw = feedUrl.download(cfg)
     feedIps = parseFeed(raw)
 
   if feedIps.len > cfg.maxElems:

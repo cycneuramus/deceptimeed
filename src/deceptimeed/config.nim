@@ -4,11 +4,12 @@ const
   defaultSet6* = "bad_ip6"
   defaultChain* = "preraw"
   defaultPrio* = "-300"
+  defaultHttpTimeoutMs* = 10_000
   defaultMaxElems* = 100_000
 
 type Config* = object
   tbl*, set4*, set6*, chain*, prio*: string
-  maxElems*: int
+  httpTimeoutMs*, maxElems*: int
 
 func defaultConfig*(): Config =
   Config(
@@ -18,4 +19,5 @@ func defaultConfig*(): Config =
     chain: defaultChain,
     prio: defaultPrio,
     maxElems: defaultMaxElems,
+    httpTimeoutMs: defaultHttpTimeoutMs,
   )

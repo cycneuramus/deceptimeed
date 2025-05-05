@@ -1,4 +1,5 @@
-import std/[json, net, sequtils, strutils]
+import std/[httpclient, json, net, sequtils, strutils]
+import ./config
 
 template baseIp(s: string): string =
   s.split("/", 1)[0]
@@ -12,6 +13,9 @@ template isIp*(s: string): bool =
 
 template isJson(body: string): bool =
   body[0] in {'{', '['}
+
+proc download*(url: string, cfg: Config): string =
+  newHttpClient(timeout = cfg.httpTimeoutMs).getContent(url)
 
 func diff*(feedIps, nftIps: seq[string]): seq[string] =
   feedIps.filterIt(it notin nftIps)
