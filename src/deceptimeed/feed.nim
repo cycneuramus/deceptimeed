@@ -14,9 +14,7 @@ template isJson(body: string): bool =
   body[0] in {'{', '['}
 
 func diff*(feedIps, nftIps: seq[string]): seq[string] =
-  for ip in feedIps:
-    if ip notin nftIps:
-      result.add(ip)
+  feedIps.filterIt(it notin nftIps)
 
 func ingestJson*(node: JsonNode, ips: var seq[string]) =
   case node.kind
