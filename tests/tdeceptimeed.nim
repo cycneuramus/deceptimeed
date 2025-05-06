@@ -1,11 +1,59 @@
-import std/[strformat, strutils, unittest]
+import std/[files, paths, strformat, strutils, unittest]
 import ../src/deceptimeed/[config, feed, nft]
 import ../src/deceptimeed
+import pkg/argparse
 
-suite "main":
-  test "Parse feed URL":
+suite "CLI argument parsing":
+  test "validate URL":
     let url = "https://honeypot.mydomain.com/plain"
     check isValidUrl(url) == true
+
+  var parser = buildParser()
+
+  test "short config flag":
+    let args = parser.parse(@["-c", "deceptimeed.conf", "https://mydomain.com"])
+    check args.config_opt.get == "deceptimeed.conf"
+
+  test "long config flag":
+    let args = parser.parse(@["--config", "deceptimeed.conf", "https://mydomain.com"])
+    check args.config_opt.get == "deceptimeed.conf"
+
+  test "missing URL errors":
+    expect(UsageError):
+      discard parser.parse(@[])
+
+suite "config":
+  test "Fall back to default config":
+    let cfg = parseOrDefault("/etc/non-existing-file")
+    check cfg == defaultConfig
+
+  test "Load config from file":
+    let tmp = "test.conf"
+    tmp.writeFile(
+      """
+        [nftables]
+        table = "myblock"
+        set4 = "ipv4_blacklist"
+        set6 = "ipv6_blacklist"
+        chain = "input_hook"
+        priority = "-200"
+        max_elements = "50000"
+
+        [http]
+        timeout_ms = "50000"
+      """.dedent()
+    )
+    defer:
+      tmp.Path().removeFile()
+
+    let cfg = tmp.parseOrDefault()
+    check cfg.table == "myblock"
+    check cfg.set4 == "ipv4_blacklist"
+    check cfg.set6 == "ipv6_blacklist"
+    check cfg.chain == "input_hook"
+    check cfg.prio == "-200"
+    check cfg.maxElems == 50000
+    check cfg.httpTimeoutMs == 50000
 
 suite "feed":
   test "Is IP address":
@@ -41,20 +89,20 @@ suite "feed":
     check v4.len == 0 and v6.len == 0
 
 suite "nft":
-  let cfg = defaultConfig()
+  let cfg = config.parseOrDefault()
 
   test "Build batch":
     let batch = buildBatch(@["1.1.1.1", "dead:beef::1"], cfg)
-    check batch.contains(fmt"flush set inet {cfg.tbl} {cfg.set4}")
-    check batch.contains(fmt"flush set inet {cfg.tbl} {cfg.set6}")
+    check batch.contains(fmt"flush set inet {cfg.table} {cfg.set4}")
+    check batch.contains(fmt"flush set inet {cfg.table} {cfg.set6}")
     check batch.contains("{ 1.1.1.1 }")
     check batch.contains("{ dead:beef::1 }")
 
   test "Empty batch":
     check buildBatch(@[], cfg) ==
       fmt"""
-        flush set inet {cfg.tbl} {cfg.set4}
-        flush set inet {cfg.tbl} {cfg.set6}
+        flush set inet {cfg.table} {cfg.set4}
+        flush set inet {cfg.table} {cfg.set6}
       """.dedent
 
   test "Extract nftables IPs":

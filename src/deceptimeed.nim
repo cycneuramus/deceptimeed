@@ -1,27 +1,46 @@
 import std/[net, os, posix, strformat, strutils, uri]
 import ./deceptimeed/[config, feed, nft]
+import pkg/argparse
 
 func isValidUrl*(url: string): bool =
   return url.parseUri().isAbsolute
 
-when isMainModule:
+template buildParser*(): untyped =
+  newParser("deceptimeed"):
+    help("Load IP blocklists into nftables")
+    arg("feed_url", help = "URL to IP list feed")
+    option(
+      "-c", "--config", help = "Path to config file (default: /etc/deceptimeed.conf)"
+    )
+
+proc main() =
   if getuid() != Uid(0):
     quit("Must run as root", 1)
-  if paramCount() != 1:
-    quit("Usage: deceptimeed <url>", 1)
 
-  let
-    cfg = defaultConfig()
-    feedUrl = paramStr(1).strip
+  var parser = buildParser()
+  let args =
+    try:
+      parser.parse()
+    except ShortCircuit as e:
+      if e.flag == "argparse_help":
+        echo e.help
+        quit(0)
+      else:
+        raise
+    except UsageError as e:
+      echo fmt"Error parsing arguments: {e.msg}"
+      quit(1)
 
-  if not isValidUrl(feedUrl):
-    quit("Invalid URL", 1)
+  if not args.feedUrl.isValidUrl():
+    quit(fmt"Invalid url: {args.feedUrl}", 1)
+
+  let cfg = args.config_opt.get(otherwise = "").parseOrDefault()
 
   if "Error" in nftTable(cfg):
     ensureRuleset(cfg)
 
   let
-    raw = feedUrl.download(cfg)
+    raw = args.feedUrl.download(cfg)
     feedIps = parseFeed(raw)
 
   if feedIps.len > cfg.maxElems:
@@ -45,3 +64,6 @@ when isMainModule:
 
   let totalIps = curIps.len + newIps.len
   echo(fmt"{newIps.len} IPs added to blocklist ({totalIps} total)")
+
+when isMainModule:
+  main()

@@ -1,23 +1,32 @@
-const
-  defaultTbl* = "blocklist"
-  defaultSet4* = "bad_ip4"
-  defaultSet6* = "bad_ip6"
-  defaultChain* = "preraw"
-  defaultPrio* = "-300"
-  defaultHttpTimeoutMs* = 10_000
-  defaultMaxElems* = 100_000
+import std/[files, parsecfg, paths, strutils, with]
 
 type Config* = object
-  tbl*, set4*, set6*, chain*, prio*: string
-  httpTimeoutMs*, maxElems*: int
+  table*, set4*, set6*, chain*, prio*: string
+  maxElems*, httpTimeoutMs*: int
 
-func defaultConfig*(): Config =
-  Config(
-    tbl: defaultTbl,
-    set4: defaultSet4,
-    set6: defaultSet6,
-    chain: defaultChain,
-    prio: defaultPrio,
-    maxElems: defaultMaxElems,
-    httpTimeoutMs: defaultHttpTimeoutMs,
-  )
+const defaultConfig* = Config(
+  table: "blocklist",
+  set4: "bad_ip4",
+  set6: "bad_ip6",
+  chain: "preraw",
+  prio: "-300",
+  maxElems: 100_000,
+  httpTimeoutMs: 10_000,
+)
+
+proc parseOrDefault*(cfgFile: string = "/etc/deceptimeed.conf"): Config =
+  var cfg = defaultConfig
+  if not cfgFile.Path().fileExists():
+    return cfg
+
+  let parser = cfgFile.loadConfig()
+  with cfg:
+    table = parser.getSectionValue("nftables", "table", "")
+    set4 = parser.getSectionValue("nftables", "set4", "")
+    set6 = parser.getSectionValue("nftables", "set6", "")
+    chain = parser.getSectionValue("nftables", "chain", "")
+    prio = parser.getSectionValue("nftables", "priority", "")
+    maxElems = parser.getSectionValue("nftables", "max_elements", "").parseInt()
+    httpTimeoutMs = parser.getSectionValue("http", "timeout_ms", "").parseInt()
+
+  return cfg

@@ -8,7 +8,7 @@ proc run*(cmd: string, args: seq[string]): string =
     quit(fmt"Error executing command: {e.msg}", 1)
 
 proc nftTable*(cfg: Config): string =
-  run("nft", @["-j", "list", "table", "inet", cfg.tbl])
+  run("nft", @["-j", "list", "table", "inet", cfg.table])
 
 proc nftIps*(nftOutput: string): seq[string] =
   var ips: seq[string]
@@ -46,7 +46,7 @@ proc ensureRuleset*(cfg: Config) =
       add rule  inet $1 $4 ip  saddr @$2 drop
       add rule  inet $1 $4 ip6 saddr @$3 drop
     """.dedent %
-    [cfg.tbl, cfg.set4, cfg.set6, cfg.chain, cfg.prio]
+    [cfg.table, cfg.set4, cfg.set6, cfg.chain, cfg.prio]
   try:
     nft(boot)
   except OSError as e:
@@ -55,12 +55,12 @@ proc ensureRuleset*(cfg: Config) =
 func buildBatch*(ips: seq[string], cfg: Config): string =
   result =
     fmt"""
-      flush set inet {cfg.tbl} {cfg.set4}
-      flush set inet {cfg.tbl} {cfg.set6}
+      flush set inet {cfg.table} {cfg.set4}
+      flush set inet {cfg.table} {cfg.set6}
     """.dedent
 
   let (ips4, ips6) = splitIps(ips)
   if ips4.len > 0:
-    result.add(&"add element inet {cfg.tbl} {cfg.set4} {{ {ips4.join(\", \")} }}\n")
+    result.add(&"add element inet {cfg.table} {cfg.set4} {{ {ips4.join(\", \")} }}\n")
   if ips6.len > 0:
-    result.add(&"add element inet {cfg.tbl} {cfg.set6} {{ {ips6.join(\", \")} }}\n")
+    result.add(&"add element inet {cfg.table} {cfg.set6} {{ {ips6.join(\", \")} }}\n")

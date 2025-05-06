@@ -67,15 +67,29 @@ nim c -d:release -d:ssl src/deceptimeed.nim
 
 ## Usage
 
+*Requires root.*
+
 ```bash
-deceptimeed <feed-url>
+Usage:
+  deceptimeed [options] feed_url
+
+Arguments:
+  feed_url         URL to IP list feed
+
+Options:
+  -h, --help
+  -c, --config=CONFIG        Path to config file (default: /etc/deceptimeed.conf)
 ```
 
-Requires root.
+**Example:**
+
+```bash
+deceptimeed -c /etc/custom.conf https://honeypot.mydomain.com/plain
+```
 
 ## Testing
 
-To test if an IP is successfully blocked, you can simulate spoofed traffic using tools like `hping3`. For example, to test blocking of `1.2.3.4` (assuming it's in your blocklist):
+To test if an IP is successfully blocked, you can simulate traffic using tools like `hping3`. For example, to test blocking of `1.2.3.4` (assuming it's in your blocklist):
 
 ```bash
 hping3 -S -a 1.2.3.4 <your-server-ip>
@@ -101,7 +115,7 @@ ______________________________________________________________________
 
    - Extracts IP addresses (IPv4 and IPv6).
    - Removes invalid entries and duplicates.
-   - Caps total at 100 000 IPs (hard-coded for now).
+   - Caps total at 100 000 IPs by default.
 
 1. **Atomic Update**\
    Replaces the contents of both sets using a single `nft -f` batch.\
@@ -111,5 +125,19 @@ ______________________________________________________________________
 
 ## Configuration
 
-> [!WARNING]
-> `nftables` names and parameters are currently hardcoded. Configuration support is planned.
+The config file (default: `/etc/deceptimeed.conf`) supports these sections and options:
+
+```ini
+[nftables]
+table = blocklist       ; Table name
+set4 = bad_ip4          ; IPv4 set name  
+set6 = bad_ip6          ; IPv6 set name
+chain = preraw          ; Chain name
+priority = -300         ; Chain priority
+max_elements = 100000   ; Max IPs to process
+
+[http]
+timeout_ms = 10000      ; HTTP request timeout in milliseconds
+```
+
+The above defaults will be used in place of missing values or in the absence of a config file.

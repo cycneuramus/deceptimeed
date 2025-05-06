@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         nim:
-          - '2.0.0'
+          - '2.2.2'
           - 'stable'
     steps:
       - uses: actions/checkout@v4

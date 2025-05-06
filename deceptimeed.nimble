@@ -9,4 +9,6 @@ bin = @["deceptimeed"]
 
 # Dependencies
 
-requires "nim >= 2.0.0"
+requires "nim >= 2.2.2"
+
+requires "argparse >= 4.0.2"
