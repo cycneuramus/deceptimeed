@@ -74,10 +74,11 @@ Usage:
   deceptimeed [options] feed_url
 
 Arguments:
-  feed_url         URL to IP list feed
+  feed_url         IP feed URL
 
 Options:
   -h, --help
+  --version                  Show program version and exit
   -c, --config=CONFIG        Path to config file (default: /etc/deceptimeed.conf)
 ```
 

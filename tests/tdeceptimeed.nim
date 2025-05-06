@@ -10,15 +10,15 @@ suite "CLI argument parsing":
 
   var parser = buildParser()
 
-  test "short config flag":
+  test "Short config option":
     let args = parser.parse(@["-c", "deceptimeed.conf", "https://mydomain.com"])
     check args.config_opt.get == "deceptimeed.conf"
 
-  test "long config flag":
+  test "Long config option":
     let args = parser.parse(@["--config", "deceptimeed.conf", "https://mydomain.com"])
     check args.config_opt.get == "deceptimeed.conf"
 
-  test "missing URL errors":
+  test "Missing argument":
     expect(UsageError):
       discard parser.parse(@[])
 

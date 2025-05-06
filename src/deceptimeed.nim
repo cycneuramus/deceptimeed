@@ -1,6 +1,9 @@
-import std/[net, os, posix, strformat, strutils, uri]
+import std/[net, os, parsecfg, posix, strformat, strutils, uri]
 import ./deceptimeed/[config, feed, nft]
 import pkg/argparse
+
+const version = staticRead("../deceptimeed.nimble").newStringStream.loadConfig
+  .getSectionValue("", "version")
 
 func isValidUrl*(url: string): bool =
   return url.parseUri().isAbsolute
@@ -8,15 +11,14 @@ func isValidUrl*(url: string): bool =
 template buildParser*(): untyped =
   newParser("deceptimeed"):
     help("Load IP blocklists into nftables")
-    arg("feed_url", help = "URL to IP list feed")
+
+    arg("feed_url", help = "IP feed URL")
+    flag("--version", help = "Show program version and exit", shortcircuit = true)
     option(
       "-c", "--config", help = "Path to config file (default: /etc/deceptimeed.conf)"
     )
 
 proc main() =
-  if getuid() != Uid(0):
-    quit("Must run as root", 1)
-
   var parser = buildParser()
   let args =
     try:
@@ -25,12 +27,17 @@ proc main() =
       if e.flag == "argparse_help":
         echo e.help
         quit(0)
+      if e.flag == "version":
+        echo version
+        quit(0)
       else:
         raise
     except UsageError as e:
       echo fmt"Error parsing arguments: {e.msg}"
       quit(1)
 
+  if getuid() != Uid(0):
+    quit("Must run as root", 1)
   if not args.feedUrl.isValidUrl():
     quit(fmt"Invalid url: {args.feedUrl}", 1)
 
