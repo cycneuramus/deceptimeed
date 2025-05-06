@@ -51,15 +51,15 @@ suite "config":
     tmpF.write(
       """
         [nftables]
-        table = "myblock"
-        set4 = "ipv4_blacklist"
-        set6 = "ipv6_blacklist"
-        chain = "input_hook"
-        priority = "-200"
-        max_elements = "50000"
+        table = myblock
+        set4 = ipv4_blacklist
+        set6 = ipv6_blacklist
+        chain = input_hook
+        priority = -200
+        max_elements = 50000
 
         [http]
-        timeout_ms = "50000"
+        timeout_ms = 50000
       """.dedent()
     )
     tmpF.close()
