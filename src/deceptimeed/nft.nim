@@ -3,6 +3,7 @@ import ./[config, feed]
 
 proc run*(cmd: string, args: seq[string]): string =
   debug(&"Running cmd: {cmd} {args.join(\" \")}")
+  # TODO: check exit status
   execProcess(command = cmd, args = args, options = {poUsePath, poStdErrToStdOut})
 
 proc nftState*(tbl: string): string =

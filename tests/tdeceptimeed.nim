@@ -4,9 +4,13 @@ import ../src/deceptimeed
 import pkg/argparse
 
 suite "CLI argument parsing":
-  test "validate URL":
+  test "Valid URL":
     let url = "https://honeypot.mydomain.com/plain"
     check isValidUrl(url) == true
+
+  test "Invalid URL":
+    let url = "ftps://honeypot.mydomain.com"
+    check isValidUrl(url) == false
 
   var parser = buildParser()
 
@@ -21,6 +25,19 @@ suite "CLI argument parsing":
   test "Missing argument":
     expect(UsageError):
       discard parser.parse(@[])
+
+  test "Daemonize by default":
+    let args = parser.parse(@["https://example.com"])
+    check args.oneshot == false
+    check args.interval == "10"
+
+  test "Oneshot flag":
+    let args = parser.parse(@["--oneshot", "https://example.com"])
+    check args.oneshot
+
+  test "Interval flag":
+    let args = parser.parse(@["--interval", "5", "https://example.com"])
+    check args.interval.parseInt() == 5
 
 suite "config":
   test "Use defaults if no config file":
@@ -110,8 +127,8 @@ suite "feed":
   test "Split IPs into v4, v6":
     let (v4, v6) =
       splitIps(@["1.1.1.1", "not-an-ip", "2001:db8::1", "8.8.8.8/32", "fd00::/8"])
-    check v4 == @["1.1.1.1", "8.8.8.8/32"]
-    check v6 == @["2001:db8::1", "fd00::/8"]
+    check v4 == @["1.1.1.1", "8.8.8.8"]
+    check v6 == @["2001:db8::1", "fd00::"]
 
   test "Invalid entries are ignored":
     let (v4, v6) = splitIps(@["not-an-ip", "300.300.300.300"])

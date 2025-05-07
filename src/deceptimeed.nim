@@ -2,6 +2,8 @@ import std/[logging, net, os, parsecfg, posix, strformat, strutils]
 import ./deceptimeed/[config, feed, nft]
 import pkg/argparse
 
+type FeedError = object of CatchableError
+
 const version = staticRead("../deceptimeed.nimble").newStringStream.loadConfig
   .getSectionValue("", "version")
 
@@ -11,10 +13,40 @@ template buildParser*(): untyped =
 
     arg("feed_url", help = "IP feed URL")
     flag("--version", help = "Show program version and exit", shortcircuit = true)
+    flag("--oneshot", help = "Run once and exit")
     flag("-v", "--verbose", help = "Show detailed output")
+    option("-i", "--interval", help = "Minutes between refreshes", default = some("10"))
     option(
-      "-c", "--config", help = "Path to config file (default: /etc/deceptimeed.conf)"
+      "-c",
+      "--config",
+      help = "Path to config file",
+      default = some("/etc/deceptimeed.conf"),
     )
+
+proc refresh(feedUrl: string, cfg: config.Config) =
+  let
+    feed = feedUrl.download(cfg)
+    feedIps = feed.parseFeed()
+  if feedIps.len == 0:
+    info("No IPs in feed")
+    return
+  if feedIps.len > cfg.maxElems:
+    raise
+      newException(FeedError, fmt"IP feed exceeds maximum size of {cfg.maxElems} items")
+
+  let
+    nftState = nftState(cfg.table)
+    curIps = nftIps(nftState)
+    newIps = feedIps.diff(curIps)
+  if newIps.len == 0:
+    debug("No new IPs to add")
+    return
+
+  let batch = buildBatch(feedIps, cfg)
+  batch.apply()
+
+  let totalIps = curIps.len + newIps.len
+  info(fmt"{newIps.len} IPs added to blocklist ({totalIps} total)")
 
 proc main() =
   var parser = buildParser()
@@ -47,19 +79,14 @@ proc main() =
   if not args.feedUrl.isValidUrl():
     fatal(fmt"Invalid url: {args.feedUrl}")
     quit(1)
+  if not args.interval.parseInt() > 0:
+    fatal(fmt"Invalid interval: {args.interval}")
 
-  let cfg = args.config_opt.get(otherwise = "/etc/deceptimeed.conf").parseOrDefault()
+  let cfg = args.config.parseOrDefault()
 
   debug("Checking for presence of ruleset")
-  let nftState =
-    try:
-      nftState(cfg.table)
-    except CatchableError as e:
-      fatal(fmt"Failed to get nftables ruleset: {e.msg}")
-      quit(1)
-
   # HACK: relying on nft output here is brittle
-  if "Error" in nftState:
+  if "Error" in nftState(cfg.table):
     info("Bootstrapping nftables ruleset")
     try:
       ensureRuleset(cfg)
@@ -67,44 +94,20 @@ proc main() =
       fatal(fmt"Failed to bootstrap nftables ruleset: {e.msg}")
       quit(1)
 
-  let
-    raw = args.feedUrl.download(cfg)
-    feedIps = parseFeed(raw)
-
-  if feedIps.len > cfg.maxElems:
-    fatal("IP feed too large")
-    quit(1)
-  if feedIps.len == 0:
-    fatal("No IPs in feed")
-    quit(1)
-
-  let curIps =
+  while true:
     try:
-      nftIps(nftState)
+      refresh(args.feedUrl, cfg)
+    except FeedError as e:
+      error(e.msg)
     except CatchableError as e:
-      fatal(fmt"Failed to extract nftables IPs: {e.msg}")
+      fatal(fmt"Refresh failed: {e.msg}")
       quit(1)
 
-  let newIps =
-    try:
-      feedIps.diff(curIps)
-    except CatchableError as e:
-      fatal(fmt"Failed to diff feed IPs from nftables IPs: {e.msg}")
-      quit(1)
+    if args.oneshot:
+      break
 
-  if newIps.len == 0:
-    info("No new IPs to add")
-    quit(0)
-
-  let batch = buildBatch(feedIps, cfg)
-  try:
-    batch.apply()
-  except CatchableError as e:
-    fatal(fmt"Failed to apply nftables batch: {e.msg}")
-    quit(1)
-
-  let totalIps = curIps.len + newIps.len
-  info(fmt"{newIps.len} IPs added to blocklist ({totalIps} total)")
+    debug(fmt"Sleeping for {args.interval} minutes...")
+    sleep(args.interval.parseInt() * 60 * 1000)
 
 when isMainModule:
   main()

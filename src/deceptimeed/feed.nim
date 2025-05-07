@@ -1,9 +1,11 @@
 import std/[httpclient, json, logging, net, sequtils, strformat, strutils, uri]
 import ./config
 
+# TODO: redundant on account of IP parsing in 'splitIps'
 template baseIp(s: string): string =
   s.split("/", 1)[0]
 
+# TODO: redundant on account of IP parsing 'splitIps'
 template isIp*(s: string): bool =
   try:
     discard parseIpAddress(s.baseIp)
@@ -39,6 +41,7 @@ func ingestJson*(node: JsonNode, ips: var seq[string]) =
   else:
     discard
 
+# TODO: separate out IP parsing concerns
 proc splitIps*(ips: seq[string]): (seq[string], seq[string]) =
   var v4, v6: seq[string]
   for ip in ips:
