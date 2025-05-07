@@ -15,7 +15,8 @@ template isJson(body: string): bool =
   body[0] in {'{', '['}
 
 func isValidUrl*(url: string): bool =
-  return url.parseUri().isAbsolute
+  let uri = url.parseUri()
+  return uri.scheme in ["http", "https"] and uri.isAbsolute
 
 proc download*(url: string, cfg: Config): string =
   debug(fmt"Downloading IP feed at {url}")
