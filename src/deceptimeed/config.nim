@@ -22,12 +22,16 @@ proc parseOrDefault*(cfgFile: string): Config =
 
   let parser = cfgFile.loadConfig()
   with cfg:
-    table = parser.getSectionValue("nftables", "table", "")
-    set4 = parser.getSectionValue("nftables", "set4", "")
-    set6 = parser.getSectionValue("nftables", "set6", "")
-    chain = parser.getSectionValue("nftables", "chain", "")
-    prio = parser.getSectionValue("nftables", "priority", "")
-    maxElems = parser.getSectionValue("nftables", "max_elements", "").parseInt()
-    httpTimeoutMs = parser.getSectionValue("http", "timeout_ms", "").parseInt()
+    table = parser.getSectionValue("nftables", "table", defaultConfig.table)
+    set4 = parser.getSectionValue("nftables", "set4", defaultConfig.set4)
+    set6 = parser.getSectionValue("nftables", "set6", defaultConfig.set6)
+    chain = parser.getSectionValue("nftables", "chain", defaultConfig.chain)
+    prio = parser.getSectionValue("nftables", "priority", defaultConfig.prio)
+    maxElems = parser
+      .getSectionValue("nftables", "max_elements", $defaultConfig.maxElems)
+      .parseInt()
+    httpTimeoutMs = parser
+      .getSectionValue("http", "timeout_ms", $defaultConfig.httpTimeoutMs)
+      .parseInt()
 
   return cfg

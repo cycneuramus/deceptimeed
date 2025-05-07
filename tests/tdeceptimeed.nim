@@ -1,4 +1,4 @@
-import std/[files, paths, strformat, strutils, unittest]
+import std/[strformat, strutils, tempfiles, unittest]
 import ../src/deceptimeed/[config, feed, nft]
 import ../src/deceptimeed
 import pkg/argparse
@@ -23,13 +23,15 @@ suite "CLI argument parsing":
       discard parser.parse(@[])
 
 suite "config":
-  test "Fall back to default config":
+  test "Use defaults if no config file":
     let cfg = parseOrDefault("/etc/non-existing-file")
     check cfg == defaultConfig
 
-  test "Load config from file":
-    let tmp = "test.conf"
-    tmp.writeFile(
+  test "Use config file":
+    let (tmpF, tmpFp) = createTempFile("deceptimeed-test", "")
+    defer:
+      tmpFp.removeFile()
+    tmpF.write(
       """
         [nftables]
         table = "myblock"
@@ -43,10 +45,9 @@ suite "config":
         timeout_ms = "50000"
       """.dedent()
     )
-    defer:
-      tmp.Path().removeFile()
+    tmpF.close()
 
-    let cfg = tmp.parseOrDefault()
+    let cfg = tmpFp.parseOrDefault()
     check cfg.table == "myblock"
     check cfg.set4 == "ipv4_blacklist"
     check cfg.set6 == "ipv6_blacklist"
@@ -54,6 +55,33 @@ suite "config":
     check cfg.prio == "-200"
     check cfg.maxElems == 50000
     check cfg.httpTimeoutMs == 50000
+
+  test "Use defaults for missing values in config file":
+    let (tmpF, tmpFp) = createTempFile("deceptimeed-test", "")
+    defer:
+      tmpFp.removeFile()
+    tmpF.write(
+      """
+        [nftables]
+        table = "custom"
+        set6  = "ipv6_custom"
+        priority = "-250"
+
+        [http]
+        # omitted
+      """.dedent()
+    )
+    tmpF.close()
+
+    let cfg = tmpFp.parseOrDefault()
+
+    check cfg.table == "custom"
+    check cfg.set6 == "ipv6_custom"
+    check cfg.prio == "-250"
+    check cfg.set4 == defaultConfig.set4
+    check cfg.chain == defaultConfig.chain
+    check cfg.maxElems == defaultConfig.maxElems
+    check cfg.httpTimeoutMs == defaultConfig.httpTimeoutMs
 
 suite "feed":
   test "Is IP address":
@@ -90,7 +118,7 @@ suite "feed":
     check v4.len == 0 and v6.len == 0
 
 suite "nft":
-  let cfg = config.parseOrDefault("/etc/deceptimeed.conf")
+  let cfg = parseOrDefault("/etc/deceptimeed.conf")
 
   test "Build batch":
     let batch = buildBatch(@["1.1.1.1", "dead:beef::1"], cfg)

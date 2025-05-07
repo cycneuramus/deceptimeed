@@ -17,9 +17,9 @@ proc nftIps*(nftOutput: string): seq[string] =
 proc apply*(batch: string) =
   let (tmpF, tmpFp) = createTempFile("deceptimeed", "")
   defer:
-    tmpFp.removeFile
+    tmpFp.removeFile()
   tmpF.write(batch)
-  tmpF.close
+  tmpF.close()
 
   discard run("nft", @["-f", tmpFp])
 
