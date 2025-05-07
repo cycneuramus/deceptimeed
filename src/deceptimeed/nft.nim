@@ -1,43 +1,30 @@
-import std/[json, os, osproc, strformat, strutils, tempfiles]
+import std/[json, logging, os, osproc, strformat, strutils, tempfiles]
 import ./[config, feed]
 
 proc run*(cmd: string, args: seq[string]): string =
-  try:
-    execProcess(command = cmd, args = args, options = {poUsePath, poStdErrToStdOut})
-  except OSError as e:
-    quit(fmt"Error executing command: {e.msg}", 1)
+  debug(&"Running cmd: {cmd} {args.join(\" \")}")
+  execProcess(command = cmd, args = args, options = {poUsePath, poStdErrToStdOut})
 
-proc nftTable*(cfg: Config): string =
-  run("nft", @["-j", "list", "table", "inet", cfg.table])
+proc nftState*(tbl: string): string =
+  debug(fmt"Getting nft table '{tbl}'")
+  run("nft", @["-j", "list", "table", "inet", tbl])
 
 proc nftIps*(nftOutput: string): seq[string] =
   var ips: seq[string]
   ingestJson(parseJson(nftOutput), ips)
   result = ips
 
-proc nft*(batch: string) =
-  let (tmpF, tmpFp) =
-    try:
-      createTempFile("deceptimeed", "")
-    except OSError as e:
-      quit(fmt"Error creating tmp file: {e.msg}", 1)
+proc apply*(batch: string) =
+  let (tmpF, tmpFp) = createTempFile("deceptimeed", "")
   defer:
     tmpFp.removeFile
+  tmpF.write(batch)
+  tmpF.close
 
-  try:
-    tmpF.write(batch)
-    tmpF.close
-  except IOError as e:
-    quit(fmt"Writing to tmp file failed: {e.msg}", 1)
-
-  try:
-    discard run("nft", @["-f", tmpFp])
-  except OSError as e:
-    quit(fmt"nft command failed: {e.msg}", 1)
+  discard run("nft", @["-f", tmpFp])
 
 proc ensureRuleset*(cfg: Config) =
-  echo "Bootstrapping nftables ruleset"
-  let boot =
+  let bootstrap =
     """
       add table inet $1
       add set   inet $1 $2 { type ipv4_addr; flags interval; comment "Deceptimeed"; }
@@ -47,10 +34,8 @@ proc ensureRuleset*(cfg: Config) =
       add rule  inet $1 $4 ip6 saddr @$3 drop
     """.dedent %
     [cfg.table, cfg.set4, cfg.set6, cfg.chain, cfg.prio]
-  try:
-    nft(boot)
-  except OSError as e:
-    quit(fmt"nft bootstrap failed: {e.msg}", 1)
+
+  bootstrap.apply()
 
 func buildBatch*(ips: seq[string], cfg: Config): string =
   result =

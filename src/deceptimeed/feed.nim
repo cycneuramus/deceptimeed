@@ -1,4 +1,4 @@
-import std/[httpclient, json, net, sequtils, strutils]
+import std/[httpclient, json, logging, net, sequtils, strformat, strutils, uri]
 import ./config
 
 template baseIp(s: string): string =
@@ -14,7 +14,11 @@ template isIp*(s: string): bool =
 template isJson(body: string): bool =
   body[0] in {'{', '['}
 
+func isValidUrl*(url: string): bool =
+  return url.parseUri().isAbsolute
+
 proc download*(url: string, cfg: Config): string =
+  debug(fmt"Downloading IP feed at {url}")
   newHttpClient(timeout = cfg.httpTimeoutMs).getContent(url)
 
 func diff*(feedIps, nftIps: seq[string]): seq[string] =
@@ -53,8 +57,10 @@ proc parseFeed*(body: string): seq[string] =
     return
 
   if feed.isJson:
+    debug("Parsing JSON feed")
     var ips: seq[string]
     ingestJson(parseJson(feed), ips)
     result = ips.deduplicate
   else:
+    debug("Parsing plain text feed")
     result = feed.splitLines.filterIt(it.strip.isIp).deduplicate

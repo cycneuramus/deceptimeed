@@ -1,4 +1,4 @@
-import std/[files, parsecfg, paths, strutils, with]
+import std/[files, logging, parsecfg, paths, strformat, strutils, with]
 
 type Config* = object
   table*, set4*, set6*, chain*, prio*: string
@@ -14,9 +14,10 @@ const defaultConfig* = Config(
   httpTimeoutMs: 10_000,
 )
 
-proc parseOrDefault*(cfgFile: string = "/etc/deceptimeed.conf"): Config =
+proc parseOrDefault*(cfgFile: string): Config =
   var cfg = defaultConfig
   if not cfgFile.Path().fileExists():
+    debug(fmt"Config file not found at {cfgFile}, using defaults")
     return cfg
 
   let parser = cfgFile.loadConfig()

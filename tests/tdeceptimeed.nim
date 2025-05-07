@@ -89,7 +89,7 @@ suite "feed":
     check v4.len == 0 and v6.len == 0
 
 suite "nft":
-  let cfg = config.parseOrDefault()
+  let cfg = config.parseOrDefault("/etc/deceptimeed.conf")
 
   test "Build batch":
     let batch = buildBatch(@["1.1.1.1", "dead:beef::1"], cfg)
