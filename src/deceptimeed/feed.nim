@@ -41,13 +41,17 @@ func ingestJson*(node: JsonNode, ips: var seq[string]) =
 proc splitIps*(ips: seq[string]): (seq[string], seq[string]) =
   var v4, v6: seq[string]
   for ip in ips:
-    try:
-      if parseIpAddress(ip.baseIp).family == IPv4:
-        v4.add(ip)
-      else:
-        v6.add(ip)
-    except ValueError:
-      discard
+    let parsedIp =
+      try:
+        parseIpAddress(ip.baseIp)
+      except ValueError:
+        continue
+
+    case parsedIp.family
+    of IPv4:
+      v4.add(ip)
+    of IPv6:
+      v6.add(ip)
 
   result = (v4, v6)
 

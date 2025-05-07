@@ -80,7 +80,8 @@ suite "feed":
     check parseFeed(json) == @["1.1.1.1", "2.2.2.2"]
 
   test "Split IPs into v4, v6":
-    let (v4, v6) = splitIps(@["1.1.1.1", "2001:db8::1", "8.8.8.8/32", "fd00::/8"])
+    let (v4, v6) =
+      splitIps(@["1.1.1.1", "not-an-ip", "2001:db8::1", "8.8.8.8/32", "fd00::/8"])
     check v4 == @["1.1.1.1", "8.8.8.8/32"]
     check v6 == @["2001:db8::1", "fd00::/8"]
 
