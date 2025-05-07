@@ -49,9 +49,9 @@ proc splitIps*(ips: seq[string]): (seq[string], seq[string]) =
 
     case parsedIp.family
     of IPv4:
-      v4.add(ip)
+      v4.add($parsedIp)
     of IPv6:
-      v6.add(ip)
+      v6.add($parsedIp)
 
   result = (v4, v6)
 
