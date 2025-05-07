@@ -79,6 +79,7 @@ Arguments:
 Options:
   -h, --help
   --version                  Show program version and exit
+  -v, --verbose              Show detailed output
   -c, --config=CONFIG        Path to config file (default: /etc/deceptimeed.conf)
 ```
 
