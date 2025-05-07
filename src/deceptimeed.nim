@@ -55,7 +55,7 @@ proc main() =
     try:
       nftState(cfg.table)
     except CatchableError as e:
-      fatal(fmt"Failed to get nft table: {e.msg}")
+      fatal(fmt"Failed to get nftables ruleset: {e.msg}")
       quit(1)
 
   # HACK: relying on nft output here is brittle
@@ -64,7 +64,8 @@ proc main() =
     try:
       ensureRuleset(cfg)
     except CatchableError as e:
-      quit(fmt"nft bootstrap failed: {e.msg}", 1)
+      fatal(fmt"Failed to bootstrap nftables ruleset: {e.msg}")
+      quit(1)
 
   let
     raw = args.feedUrl.download(cfg)
@@ -81,7 +82,7 @@ proc main() =
     try:
       nftIps(nftState)
     except CatchableError as e:
-      fatal(fmt"Failed to extract nft IPs: {e.msg}")
+      fatal(fmt"Failed to extract nftables IPs: {e.msg}")
       quit(1)
 
   let newIps =
