@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/cycneuramus/deceptimeed/compare/v0.2.0...v0.3.0) (2025-05-07)
+
+
+### Features
+
+* Add logging and the -v flag ([9069eeb](https://github.com/cycneuramus/deceptimeed/commit/9069eebf39c2593071d3d367d7aec3bad9a477b2))
+
+
+### Bug Fixes
+
+* Use defaults for missing values in config file ([aa4a09d](https://github.com/cycneuramus/deceptimeed/commit/aa4a09d746898c09c5d329b683f4be9c60e744ca))
+
 ## [0.2.0](https://github.com/cycneuramus/deceptimeed/compare/v0.1.1...v0.2.0) (2025-05-06)
 
 
