@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.0.0](https://github.com/cycneuramus/deceptimeed/compare/v0.3.0...v1.0.0) (2025-05-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* Daemonize by default
+
+### Features
+
+* Add --interval flag ([cc11b22](https://github.com/cycneuramus/deceptimeed/commit/cc11b22cdabbcbb5c9acb497f61cf2f2dba9d01d))
+* Add --oneshot flag ([cc11b22](https://github.com/cycneuramus/deceptimeed/commit/cc11b22cdabbcbb5c9acb497f61cf2f2dba9d01d))
+* Daemonize by default ([cc11b22](https://github.com/cycneuramus/deceptimeed/commit/cc11b22cdabbcbb5c9acb497f61cf2f2dba9d01d))
+
+
+### Bug Fixes
+
+* Collect IPs in canonical form ([9049099](https://github.com/cycneuramus/deceptimeed/commit/9049099dbf3cb5cb3ffe995cafe33e3044562c5b))
+* Only consider http/https scheme to be a valid URL ([fd7a379](https://github.com/cycneuramus/deceptimeed/commit/fd7a37926a2a6bc9191c97f4ea23ef711f86dcc9))
+
 ## [0.3.0](https://github.com/cycneuramus/deceptimeed/compare/v0.2.0...v0.3.0) (2025-05-07)
 
 
