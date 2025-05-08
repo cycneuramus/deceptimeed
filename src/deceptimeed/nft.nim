@@ -1,4 +1,4 @@
-import std/[json, logging, os, osproc, strformat, strutils, tempfiles]
+import std/[json, logging, net, os, osproc, strformat, strutils, tempfiles]
 import ./[config, feed]
 
 proc run*(cmd: string, args: seq[string]): string =
@@ -37,7 +37,7 @@ proc ensureRuleset*(cfg: Config) =
 
   bootstrap.apply()
 
-func buildBatch*(ips: seq[string], cfg: Config): string =
+func buildBatch*(ips: seq[IpAddress], cfg: Config): string =
   result = fmt"""
       flush set inet {cfg.table} {cfg.set4}
       flush set inet {cfg.table} {cfg.set6}
