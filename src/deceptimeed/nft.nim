@@ -12,7 +12,8 @@ proc state*(tbl: string): string =
 
 proc extractIps*(nftOutput: string): seq[string] =
   var ips: seq[string]
-  ingestJson(parseJson(nftOutput), ips)
+  let json = nftOutput.parseJson()
+  jsonIps(json, ips)
   result = ips
 
 proc apply*(batch: string) =

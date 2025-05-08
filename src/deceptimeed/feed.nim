@@ -12,9 +12,6 @@ template isIp*(s: string): bool =
   except ValueError:
     false
 
-template isJson(body: string): bool =
-  body[0] in {'{', '['}
-
 func isValidUrl*(url: string): bool =
   let uri = url.parseUri()
   return uri.scheme in ["http", "https"] and uri.isAbsolute
@@ -26,19 +23,22 @@ proc download*(http: HttpClient, url: string): string =
 func diff*(feedIps, nftIps: seq[string]): seq[string] =
   feedIps.filterIt(it notin nftIps)
 
-func ingestJson*(node: JsonNode, ips: var seq[string]) =
+func jsonIps*(node: JsonNode, ips: var seq[string]) =
   case node.kind
   of JString:
     if node.str.isIp:
       ips.add(node.str)
   of JArray:
     for i in node.items:
-      ingestJson(i, ips)
+      jsonIps(i, ips)
   of JObject:
     for _, v in node:
-      ingestJson(v, ips)
+      jsonIps(v, ips)
   else:
     discard
+
+func plainIps*(body: string): seq[string] =
+  result = body.splitLines.filterIt(it.strip().isIp)
 
 # TODO: separate out IP parsing concerns
 proc splitIps*(ips: seq[string]): (seq[string], seq[string]) =
@@ -63,11 +63,13 @@ proc parseFeed*(body: string): seq[string] =
   if feed.len == 0:
     return
 
-  if feed.isJson:
-    debug("Parsing JSON feed")
-    var ips: seq[string]
-    ingestJson(parseJson(feed), ips)
-    result = ips.deduplicate()
-  else:
-    debug("Parsing plain text feed")
-    result = feed.splitLines.filterIt(it.strip().isIp).deduplicate()
+  result =
+    try:
+      let jfeed = feed.parseJson()
+      debug("Parsing JSON feed")
+      var ips: seq[string]
+      jfeed.jsonIps(ips)
+      ips.deduplicate()
+    except JsonParsingError:
+      debug("Parsing plain text feed")
+      feed.plainIps().deduplicate()
