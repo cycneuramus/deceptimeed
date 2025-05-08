@@ -149,11 +149,10 @@ suite "nft":
       fmt"""
         flush set inet {cfg.table} {cfg.set4}
         flush set inet {cfg.table} {cfg.set6}
-      """.dedent
+      """.dedent()
 
   test "Extract nftables IPs":
-    let mockNftOutput =
-      """
+    let mockNftOutput = """
         {
           "nftables": [
             {
@@ -183,9 +182,9 @@ suite "nft":
             }
           ]
         }
-      """.dedent
+      """.dedent()
 
-    check nftIps(mockNftOutput) == ["1.2.3.4", "5.6.7.8", "192.168.0.1"]
+    check mockNftOutput.extractIps() == ["1.2.3.4", "5.6.7.8", "192.168.0.1"]
 
   test "Yield only new IPs":
     let feedIps = @["10.0.0.1", "192.168.0.1", "203.0.113.5"]

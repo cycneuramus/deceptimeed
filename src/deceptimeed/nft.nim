@@ -6,11 +6,11 @@ proc run*(cmd: string, args: seq[string]): string =
   # TODO: check exit status
   execProcess(command = cmd, args = args, options = {poUsePath, poStdErrToStdOut})
 
-proc nftState*(tbl: string): string =
+proc state*(tbl: string): string =
   debug(fmt"Getting nft table '{tbl}'")
   run("nft", @["-j", "list", "table", "inet", tbl])
 
-proc nftIps*(nftOutput: string): seq[string] =
+proc extractIps*(nftOutput: string): seq[string] =
   var ips: seq[string]
   ingestJson(parseJson(nftOutput), ips)
   result = ips
@@ -33,17 +33,16 @@ proc ensureRuleset*(cfg: Config) =
       add chain inet $1 $4 { type filter hook prerouting priority $5; policy accept; }
       add rule  inet $1 $4 ip  saddr @$2 drop
       add rule  inet $1 $4 ip6 saddr @$3 drop
-    """.dedent %
+    """.dedent() %
     [cfg.table, cfg.set4, cfg.set6, cfg.chain, cfg.prio]
 
   bootstrap.apply()
 
 func buildBatch*(ips: seq[string], cfg: Config): string =
-  result =
-    fmt"""
+  result = fmt"""
       flush set inet {cfg.table} {cfg.set4}
       flush set inet {cfg.table} {cfg.set6}
-    """.dedent
+    """.dedent()
 
   let (ips4, ips6) = splitIps(ips)
   if ips4.len > 0:

@@ -1,4 +1,4 @@
-import std/[logging, net, os, parsecfg, posix, strformat, strutils]
+import std/[httpclient, logging, net, os, parsecfg, posix, strformat, strutils]
 import ./deceptimeed/[config, feed, nft]
 import pkg/argparse
 
@@ -23,9 +23,9 @@ template buildParser*(): untyped =
       default = some("/etc/deceptimeed.conf"),
     )
 
-proc refresh(feedUrl: string, cfg: config.Config) =
+proc refresh(http: HttpClient, feedUrl: string, cfg: config.Config) =
   let
-    feed = feedUrl.download(cfg)
+    feed = http.download(feedUrl)
     feedIps = feed.parseFeed()
   if feedIps.len == 0:
     info("No IPs in feed")
@@ -35,8 +35,8 @@ proc refresh(feedUrl: string, cfg: config.Config) =
       newException(FeedError, fmt"IP feed exceeds maximum size of {cfg.maxElems} items")
 
   let
-    nftState = nftState(cfg.table)
-    curIps = nftIps(nftState)
+    nftState = cfg.table.state()
+    curIps = nftState.extractIps()
     newIps = feedIps.diff(curIps)
   if newIps.len == 0:
     debug("No new IPs to add")
@@ -82,11 +82,15 @@ proc main() =
   if not args.interval.parseInt() > 0:
     fatal(fmt"Invalid interval: {args.interval}")
 
-  let cfg = args.config.parseOrDefault()
+  let
+    cfg = args.config.parseOrDefault()
+    http = newHttpClient(timeout = cfg.httpTimeoutMs)
 
   debug("Checking for presence of ruleset")
   # HACK: relying on nft output here is brittle
-  if "Error" in nftState(cfg.table):
+  if "Error" notin cfg.table.state():
+    debug("Ruleset already present")
+  else:
     info("Bootstrapping nftables ruleset")
     try:
       ensureRuleset(cfg)
@@ -96,7 +100,7 @@ proc main() =
 
   while true:
     try:
-      refresh(args.feedUrl, cfg)
+      refresh(http, args.feedUrl, cfg)
     except FeedError as e:
       error(e.msg)
     except CatchableError as e:

@@ -1,5 +1,4 @@
 import std/[httpclient, json, logging, net, sequtils, strformat, strutils, uri]
-import ./config
 
 # TODO: redundant on account of IP parsing in 'splitIps'
 template baseIp(s: string): string =
@@ -20,9 +19,9 @@ func isValidUrl*(url: string): bool =
   let uri = url.parseUri()
   return uri.scheme in ["http", "https"] and uri.isAbsolute
 
-proc download*(url: string, cfg: Config): string =
+proc download*(http: HttpClient, url: string): string =
   debug(fmt"Downloading IP feed at {url}")
-  newHttpClient(timeout = cfg.httpTimeoutMs).getContent(url)
+  http.getContent(url)
 
 func diff*(feedIps, nftIps: seq[string]): seq[string] =
   feedIps.filterIt(it notin nftIps)
@@ -60,7 +59,7 @@ proc splitIps*(ips: seq[string]): (seq[string], seq[string]) =
   result = (v4, v6)
 
 proc parseFeed*(body: string): seq[string] =
-  let feed = body.strip
+  let feed = body.strip()
   if feed.len == 0:
     return
 
@@ -68,7 +67,7 @@ proc parseFeed*(body: string): seq[string] =
     debug("Parsing JSON feed")
     var ips: seq[string]
     ingestJson(parseJson(feed), ips)
-    result = ips.deduplicate
+    result = ips.deduplicate()
   else:
     debug("Parsing plain text feed")
-    result = feed.splitLines.filterIt(it.strip.isIp).deduplicate
+    result = feed.splitLines.filterIt(it.strip().isIp).deduplicate()
