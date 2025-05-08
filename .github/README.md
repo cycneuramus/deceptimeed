@@ -47,7 +47,7 @@ This is a utility program for loading IP blocklists into `nftables` from HTTP en
 ```
 
 > [!NOTE]
-> The structure of the JSON data doesn't matter since the parser extracts any strings representing valid IP addresses.
+> The structure of the JSON data doesn't matter since the parser will extract any strings representing valid IP addresses.
 
 ______________________________________________________________________
 
@@ -69,7 +69,7 @@ nim c -d:release -d:ssl src/deceptimeed.nim
 
 *Requires root.*
 
-```bash
+```plain
 Usage:
   deceptimeed [options] feed_url
 
@@ -79,14 +79,16 @@ Arguments:
 Options:
   -h, --help
   --version                  Show program version and exit
+  --oneshot                  Run once and exit
   -v, --verbose              Show detailed output
+  -i, --interval=INTERVAL    Minutes between refreshes (default: 10)
   -c, --config=CONFIG        Path to config file (default: /etc/deceptimeed.conf)
 ```
 
 **Example:**
 
 ```bash
-deceptimeed -c /etc/custom.conf https://honeypot.mydomain.com/plain
+deceptimeed -c /etc/custom.conf -i 30 -v https://honeypot.mydomain.com/plain
 ```
 
 ## Testing
@@ -104,7 +106,7 @@ ______________________________________________________________________
 ## How It Works
 
 1. **Ruleset Setup**\
-   On first run, creates:
+   Creates (if not already existing):
 
    - `table inet blocklist`
    - `set bad_ip4` (IPv4) and `set bad_ip6` (IPv6)
@@ -115,13 +117,16 @@ ______________________________________________________________________
 
 1. **Parsing and Filtering**
 
-   - Extracts IP addresses (IPv4 and IPv6).
+   - Extracts IP addresses (IPv4 and IPv6) from feed.
    - Removes invalid entries and duplicates.
    - Caps total at 100 000 IPs by default.
 
-1. **Atomic Update**\
-   Replaces the contents of both sets using a single `nft -f` batch.\
+1. **Batch Update**\
+   Replaces the contents of our `nftables` sets using a single `nft -f` batch.\
    If the batch fails, the current set contents remain unchanged.
+
+1. **Periodic Refresh**\
+   Sleeps for `<interval>` minutes (default: 10), then starts over.
 
 ______________________________________________________________________
 
