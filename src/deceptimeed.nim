@@ -1,4 +1,4 @@
-import std/[httpclient, logging, net, os, parsecfg, posix, strformat, strutils]
+import std/[httpclient, json, logging, net, os, parsecfg, posix, strformat, strutils]
 import ./deceptimeed/[config, feed, nft]
 import pkg/argparse
 
@@ -36,7 +36,7 @@ proc refresh(http: HttpClient, feedUrl: string, cfg: config.Config) =
 
   let
     nftState = cfg.table.state()
-    curIps = nftState.extractIps()
+    curIps = nftState.jsonIps()
     newIps = feedIps.diff(curIps)
   if newIps.len == 0:
     debug("No new IPs to add")
@@ -87,10 +87,10 @@ proc main() =
     http = newHttpClient(timeout = cfg.httpTimeoutMs)
 
   debug("Checking for presence of ruleset")
-  # HACK: relying on nft output here is brittle
-  if "Error" notin cfg.table.state():
+  try:
+    discard cfg.table.state()
     debug("Ruleset already present")
-  else:
+  except JsonParsingError:
     info("Bootstrapping nftables ruleset")
     try:
       ensureRuleset(cfg)

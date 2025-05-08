@@ -23,19 +23,25 @@ proc download*(http: HttpClient, url: string): string =
 func diff*(feedIps, nftIps: seq[string]): seq[string] =
   feedIps.filterIt(it notin nftIps)
 
-func jsonIps*(node: JsonNode, ips: var seq[string]) =
-  case node.kind
-  of JString:
-    if node.str.isIp:
-      ips.add(node.str)
-  of JArray:
-    for i in node.items:
-      jsonIps(i, ips)
-  of JObject:
-    for _, v in node:
-      jsonIps(v, ips)
-  else:
-    discard
+func jsonIps*(node: JsonNode): seq[string] =
+  func walk(node: JsonNode, ips: var seq[string]) =
+    case node.kind
+    of JString:
+      if node.str.isIp:
+        ips.add(node.str)
+    of JArray:
+      for i in node.items:
+        walk(i, ips)
+    of JObject:
+      for _, v in node:
+        walk(v, ips)
+    else:
+      discard
+
+  var ips: seq[string]
+  node.walk(ips)
+
+  return ips
 
 func plainIps*(body: string): seq[string] =
   result = body.splitLines.filterIt(it.strip().isIp)
@@ -67,9 +73,7 @@ proc parseFeed*(body: string): seq[string] =
     try:
       let jfeed = feed.parseJson()
       debug("Parsing JSON feed")
-      var ips: seq[string]
-      jfeed.jsonIps(ips)
-      ips.deduplicate()
+      jfeed.jsonIps().deduplicate
     except JsonParsingError:
       debug("Parsing plain text feed")
       feed.plainIps().deduplicate()

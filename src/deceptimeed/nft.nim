@@ -6,15 +6,13 @@ proc run*(cmd: string, args: seq[string]): string =
   # TODO: check exit status
   execProcess(command = cmd, args = args, options = {poUsePath, poStdErrToStdOut})
 
-proc state*(tbl: string): string =
+proc state*(tbl: string): JsonNode =
   debug(fmt"Getting nft table '{tbl}'")
-  run("nft", @["-j", "list", "table", "inet", tbl])
-
-proc extractIps*(nftOutput: string): seq[string] =
-  var ips: seq[string]
-  let json = nftOutput.parseJson()
-  jsonIps(json, ips)
-  result = ips
+  let output = run("nft", @["-j", "list", "table", "inet", tbl])
+  try:
+    output.parseJson()
+  except JsonParsingError:
+    raise
 
 proc apply*(batch: string) =
   let (tmpF, tmpFp) = createTempFile("deceptimeed", "")

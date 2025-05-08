@@ -1,4 +1,4 @@
-import std/[strformat, strutils, tempfiles, unittest]
+import std/[json, strformat, strutils, tempfiles, unittest]
 import ../src/deceptimeed/[config, feed, nft]
 import ../src/deceptimeed
 import pkg/argparse
@@ -152,39 +152,32 @@ suite "nft":
       """.dedent()
 
   test "Extract nftables IPs":
-    let mockNftOutput = """
-        {
-          "nftables": [
-            {
-              "metainfo": {
-                "version": "1.0.6",
-                "release_name": "Lester Gooch #5",
-                "json_schema_version": 1
-              }
-            },
-            {
-              "set": {
-                "family": "inet",
-                "name": "bad_ip4",
-                "table": "blocklist",
-                "type": "ipv4_addr",
-                "handle": 1,
-                "comment": "Deceptimeed",
-                "flags": [
-                  "interval"
-                ],
-                "elem": [
-                  "1.2.3.4",
-                  "5.6.7.8",
-                  "192.168.0.1"
-                ]
-              }
+    let mockNftOutput =
+      %*{
+        "nftables": [
+          {
+            "metainfo": {
+              "version": "1.0.6",
+              "release_name": "Lester Gooch #5",
+              "json_schema_version": 1,
             }
-          ]
-        }
-      """.dedent()
+          },
+          {
+            "set": {
+              "family": "inet",
+              "name": "bad_ip4",
+              "table": "blocklist",
+              "type": "ipv4_addr",
+              "handle": 1,
+              "comment": "Deceptimeed",
+              "flags": ["interval"],
+              "elem": ["1.2.3.4", "5.6.7.8", "192.168.0.1"],
+            }
+          },
+        ]
+      }
 
-    check mockNftOutput.extractIps() == ["1.2.3.4", "5.6.7.8", "192.168.0.1"]
+    check mockNftOutput.jsonIps() == ["1.2.3.4", "5.6.7.8", "192.168.0.1"]
 
   test "Yield only new IPs":
     let feedIps = @["10.0.0.1", "192.168.0.1", "203.0.113.5"]
