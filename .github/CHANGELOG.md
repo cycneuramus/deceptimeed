@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/cycneuramus/deceptimeed/compare/v1.0.1...v1.1.0) (2025-05-09)
+
+
+### Features
+
+* Delete obsolete IP elements from blocklist ([a77c121](https://github.com/cycneuramus/deceptimeed/commit/a77c121bbdcfa5fe95d9e837883bc5efc6d129b6))
+* Incremental atomic nftables updates ([a77c121](https://github.com/cycneuramus/deceptimeed/commit/a77c121bbdcfa5fe95d9e837883bc5efc6d129b6))
+
+
+### Bug Fixes
+
+* Handle nft command errors ([a74ec1d](https://github.com/cycneuramus/deceptimeed/commit/a74ec1d5d8b4837592a3fdeee15a70d13ee7ceba))
+* Properly close HTTP request ([a369cb3](https://github.com/cycneuramus/deceptimeed/commit/a369cb306ac39552ffa999ae6906907bbc0f2e8e))
+
 ## [1.0.1](https://github.com/cycneuramus/deceptimeed/compare/v1.0.0...v1.0.1) (2025-05-09)
 
 
