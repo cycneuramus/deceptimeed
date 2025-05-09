@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.1](https://github.com/cycneuramus/deceptimeed/compare/v1.0.0...v1.0.1) (2025-05-09)
+
+
+### Bug Fixes
+
+* Check external process exit code ([98a582b](https://github.com/cycneuramus/deceptimeed/commit/98a582b3eb0739b8918b86275f0b0edc306ad03c))
+* Don't recreate http client on every refresh ([b3c979c](https://github.com/cycneuramus/deceptimeed/commit/b3c979c2fea293e830825b6d0eadb9ddb519ded0))
+* Handle HTTP errors ([156e9cb](https://github.com/cycneuramus/deceptimeed/commit/156e9cbde81dae6816f416be2c36b184bb0ff5e9))
+
 ## [1.0.0](https://github.com/cycneuramus/deceptimeed/compare/v0.3.0...v1.0.0) (2025-05-08)
 
 
