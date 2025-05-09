@@ -19,6 +19,8 @@ proc download*(http: HttpClient, url: string): string =
       http.request(url, httpMethod = HttpGet)
     except TimeoutError as e:
       raise newException(HttpRequestError, fmt"HTTP request timed out: {e.msg}")
+    finally:
+      http.close()
 
   case response.code()
   of Http200:
