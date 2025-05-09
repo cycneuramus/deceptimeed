@@ -186,7 +186,9 @@ suite "nft":
         ]
       }
 
-    check mockNftOutput.jsonIps().mapIt($it) == ["1.2.3.4", "5.6.7.8", "192.168.0.1"]
+    check mockNftOutput.ipsFromJson().mapIt($it) == [
+      "1.2.3.4", "5.6.7.8", "192.168.0.1"
+    ]
 
   test "Yield only new IPs":
     let feedIps = @["10.0.0.1", "192.168.0.1", "203.0.113.5"].mockIps()

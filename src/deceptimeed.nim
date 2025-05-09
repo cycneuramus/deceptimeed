@@ -36,7 +36,7 @@ proc refresh(http: HttpClient, feedUrl: string, cfg: config.Config) =
 
   let
     nftState = cfg.table.state()
-    curIps = nftState.jsonIps()
+    curIps = nftState.ipsFromJson()
     newIps = feedIps.diff(curIps)
   if newIps.len == 0:
     debug("No new IPs to add")

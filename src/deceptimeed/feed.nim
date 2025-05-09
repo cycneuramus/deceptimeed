@@ -10,7 +10,7 @@ template parseIp*(str: string): Option[IpAddress] =
 
 func isValidUrl*(url: string): bool =
   let uri = url.parseUri()
-  return uri.scheme in ["http", "https"] and uri.isAbsolute
+  return uri.scheme in ["http", "https"] and uri.isAbsolute()
 
 proc download*(http: HttpClient, url: string): string =
   debug(fmt"Downloading IP feed at {url}")
@@ -19,7 +19,7 @@ proc download*(http: HttpClient, url: string): string =
 func diff*(feedIps, nftIps: seq[IpAddress]): seq[IpAddress] =
   feedIps.filterIt(it notin nftIps)
 
-func jsonIps*(node: JsonNode): seq[IpAddress] =
+func ipsFromJson*(node: JsonNode): seq[IpAddress] =
   func walk(node: JsonNode, ips: var seq[IpAddress]) =
     case node.kind
     of JString:
@@ -40,7 +40,7 @@ func jsonIps*(node: JsonNode): seq[IpAddress] =
 
   return ips
 
-func plainIps*(body: string): seq[IpAddress] =
+func ipsFromPlain*(body: string): seq[IpAddress] =
   for line in body.splitLines():
     let ip = line.parseIp()
     if ip.isSome():
@@ -64,9 +64,9 @@ proc parseFeed*(body: string): seq[IpAddress] =
 
   result =
     try:
-      let jfeed = feed.parseJson()
+      let json = feed.parseJson()
       debug("Parsing JSON feed")
-      jfeed.jsonIps().deduplicate()
+      json.ipsFromJson().deduplicate()
     except JsonParsingError:
       debug("Parsing plain text feed")
-      feed.plainIps().deduplicate()
+      feed.ipsFromPlain().deduplicate()
