@@ -1,10 +1,17 @@
-import std/[json, logging, net, os, osproc, strformat, strutils, tempfiles]
+import std/[json, logging, net, os, osproc, streams, strformat, strutils, tempfiles]
 import ./[config, feed]
 
 proc run*(cmd: string, args: seq[string]): string =
   debug(&"Running cmd: {cmd} {args.join(\" \")}")
-  # TODO: check exit status
-  execProcess(command = cmd, args = args, options = {poUsePath, poStdErrToStdOut})
+  let process = startProcess(cmd, args = args, options = {poUsePath, poStdErrToStdOut})
+  defer:
+    process.close()
+
+  result = process.outputStream().readAll()
+  let exitCode = process.waitForExit()
+
+  if exitCode != 0:
+    error(fmt"{cmd} exited with code {exitCode}: {result}")
 
 proc state*(tbl: string): JsonNode =
   debug(fmt"Getting nft table '{tbl}'")
