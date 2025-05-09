@@ -43,16 +43,20 @@ proc refresh(http: HttpClient, feedUrl: string, cfg: config.Config) =
   let
     nftState = cfg.table.state()
     curIps = nftState.ipsFromJson()
-    newIps = feedIps.diff(curIps)
-  if newIps.len == 0:
-    debug("No new IPs to add")
+    addIps = feedIps.diff(curIps)
+    delIps = curIps.diff(feedIps)
+
+  if addIps.len == 0 and delIps.len == 0:
+    debug("Blocklist unchanged")
     return
 
-  let batch = buildBatch(feedIps, cfg)
-  batch.apply()
+  let batch = buildBatch(addIps, delIps, cfg)
+  if batch.len == 0:
+    debug("No batch generated")
+    return
 
-  let totalIps = curIps.len + newIps.len
-  info(fmt"{newIps.len} IPs added to blocklist ({totalIps} total)")
+  batch.apply()
+  info(fmt"{addIps.len} IPs added, {delIps.len} removed – {feedIps.len} total")
 
 proc main() =
   var parser = buildParser()

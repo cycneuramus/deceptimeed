@@ -125,8 +125,8 @@ suite "feed":
     check parseFeed(ips).mapIt($it) == @["1.1.1.1", "2.2.2.2"]
 
   test "JSON feed":
-    let json = """{ "a": "10.0.0.1","b": ["dead:beef::1", {"x":"8.8.8.8"}] }"""
-    check parseFeed(json).mapIt($it) == @["10.0.0.1", "dead:beef::1", "8.8.8.8"]
+    let json = """{ "a": "10.0.0.1","b": ["2001:db8::1", {"x":"8.8.8.8"}] }"""
+    check parseFeed(json).mapIt($it) == @["10.0.0.1", "2001:db8::1", "8.8.8.8"]
 
   test "JSON feed with leading whitespace":
     let json = "\n  [\"1.1.1.1\", \"2.2.2.2\", \"1.1.1.1\"]"
@@ -146,19 +146,22 @@ suite "feed":
 suite "nft":
   let cfg = parseOrDefault("/etc/deceptimeed.conf")
 
-  test "Build batch":
-    let batch = buildBatch(@["1.1.1.1", "dead:beef::1"].mockIps(), cfg)
-    check batch.contains(fmt"flush set inet {cfg.table} {cfg.set4}")
-    check batch.contains(fmt"flush set inet {cfg.table} {cfg.set6}")
-    check batch.contains("{ 1.1.1.1 }")
-    check batch.contains("{ dead:beef::1 }")
+  test "Build incremental batch":
+    let
+      addIps = @["1.1.1.1", "2001:db8::1"].mockIps()
+      delIps = @["2.2.2.2", "3001:db8::1"].mockIps()
+      batch = buildBatch(addIps, delIps, cfg)
+      expected = fmt"""
+        delete element inet {cfg.table} {cfg.set4} {{ 2.2.2.2 }}
+        delete element inet {cfg.table} {cfg.set6} {{ 3001:db8::1 }}
+        add element inet {cfg.table} {cfg.set4} {{ 1.1.1.1 }}
+        add element inet {cfg.table} {cfg.set6} {{ 2001:db8::1 }}
+      """.dedent()
+
+    check batch == expected
 
   test "Empty batch":
-    check buildBatch(@[], cfg) ==
-      fmt"""
-        flush set inet {cfg.table} {cfg.set4}
-        flush set inet {cfg.table} {cfg.set6}
-      """.dedent()
+    check buildBatch(@[], @[], cfg) == ""
 
   test "Extract nftables IPs":
     let mockNftOutput =

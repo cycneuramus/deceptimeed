@@ -49,14 +49,19 @@ proc ensureRuleset*(cfg: Config) =
 
   bootstrap.apply()
 
-func buildBatch*(ips: seq[IpAddress], cfg: Config): string =
-  result = fmt"""
-      flush set inet {cfg.table} {cfg.set4}
-      flush set inet {cfg.table} {cfg.set6}
-    """.dedent()
+func buildBatch*(addIps, delIps: seq[IpAddress], cfg: Config): string =
+  let (del4, del6) = delIps.splitIps()
+  let (add4, add6) = addIps.splitIps()
 
-  let (ips4, ips6) = splitIps(ips)
-  if ips4.len > 0:
-    result.add(&"add element inet {cfg.table} {cfg.set4} {{ {ips4.join(\", \")} }}\n")
-  if ips6.len > 0:
-    result.add(&"add element inet {cfg.table} {cfg.set6} {{ {ips6.join(\", \")} }}\n")
+  if del4.len > 0:
+    result.add(
+      &"delete element inet {cfg.table} {cfg.set4} {{ {del4.join(\", \")} }}\n"
+    )
+  if del6.len > 0:
+    result.add(
+      &"delete element inet {cfg.table} {cfg.set6} {{ {del6.join(\", \")} }}\n"
+    )
+  if add4.len > 0:
+    result.add(&"add element inet {cfg.table} {cfg.set4} {{ {add4.join(\", \")} }}\n")
+  if add6.len > 0:
+    result.add(&"add element inet {cfg.table} {cfg.set6} {{ {add6.join(\", \")} }}\n")

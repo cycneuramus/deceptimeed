@@ -121,9 +121,12 @@ ______________________________________________________________________
    - Removes invalid entries and duplicates.
    - Caps total at 100 000 IPs by default.
 
-1. **Batch Update**\
-   Replaces the contents of our `nftables` sets using a single `nft -f` batch.\
-   If the batch fails, the current set contents remain unchanged.
+1. **Atomic Updates**\
+   Deletes obsolete IP elements and adds new ones in a
+   single `nft -f` batch.
+
+   The sets are never flushed, so existing blocks stay active for the entire
+   update. If the batch fails, current `nftables` content remains unchanged.
 
 1. **Periodic Refresh**\
    Sleeps for `<interval>` minutes (default: 10), then starts over.
