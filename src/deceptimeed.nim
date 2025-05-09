@@ -25,8 +25,14 @@ template buildParser*(): untyped =
 
 proc refresh(http: HttpClient, feedUrl: string, cfg: config.Config) =
   let
-    feed = http.download(feedUrl)
+    feed =
+      try:
+        http.download(feedUrl)
+      except HttpRequestError as e:
+        error(e.msg)
+        return
     feedIps = feed.parseFeed()
+
   if feedIps.len == 0:
     info("No IPs in feed")
     return

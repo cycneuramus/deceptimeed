@@ -14,7 +14,19 @@ func isValidUrl*(url: string): bool =
 
 proc download*(http: HttpClient, url: string): string =
   debug(fmt"Downloading IP feed at {url}")
-  http.getContent(url)
+  let response =
+    try:
+      http.request(url, httpMethod = HttpGet)
+    except TimeoutError as e:
+      raise newException(HttpRequestError, fmt"HTTP request timed out: {e.msg}")
+
+  case response.code()
+  of Http200:
+    return response.body()
+  else:
+    raise newException(
+      HttpRequestError, fmt"HTTP request failed with code: {response.code()}"
+    )
 
 func diff*(feedIps, nftIps: seq[IpAddress]): seq[IpAddress] =
   feedIps.filterIt(it notin nftIps)
