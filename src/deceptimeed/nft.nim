@@ -1,9 +1,14 @@
 import std/[json, logging, net, os, osproc, streams, strformat, strutils, tempfiles]
 import ./[config, feed]
 
-proc run*(cmd: string, args: seq[string]): string =
-  debug(&"Running cmd: {cmd} {args.join(\" \")}")
-  let process = startProcess(cmd, args = args, options = {poUsePath, poStdErrToStdOut})
+const nftCmd = "nft"
+
+type NftError* = object of CatchableError
+
+proc nft*(args: seq[string]): string =
+  debug(&"Running cmd: {nftCmd} {args.join(\" \")}")
+  let process =
+    startProcess(nftCmd, args = args, options = {poUsePath, poStdErrToStdOut})
   defer:
     process.close()
 
@@ -11,11 +16,11 @@ proc run*(cmd: string, args: seq[string]): string =
   let exitCode = process.waitForExit()
 
   if exitCode != 0:
-    error(fmt"{cmd} exited with code {exitCode}: {result}")
+    raise newException(NftError, fmt"{nftCmd} exited with code {exitCode}: {result}")
 
 proc state*(tbl: string): JsonNode =
   debug(fmt"Getting nft table '{tbl}'")
-  let output = run("nft", @["-j", "list", "table", "inet", tbl])
+  let output = nft(@["-j", "list", "table", "inet", tbl])
   try:
     output.parseJson()
   except JsonParsingError:
@@ -28,7 +33,7 @@ proc apply*(batch: string) =
   tmpF.write(batch)
   tmpF.close()
 
-  discard run("nft", @["-f", tmpFp])
+  discard nft(@["-f", tmpFp])
 
 proc ensureRuleset*(cfg: Config) =
   let bootstrap =

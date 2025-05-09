@@ -109,6 +109,8 @@ proc main() =
       refresh(http, args.feedUrl, cfg)
     except FeedError as e:
       error(e.msg)
+    except NftError as e:
+      error(e.msg)
     except CatchableError as e:
       fatal(fmt"Refresh failed: {e.msg}")
       quit(1)
