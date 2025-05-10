@@ -30,8 +30,8 @@ proc download*(http: HttpClient, url: string): string =
       HttpRequestError, fmt"HTTP request failed with code: {response.code()}"
     )
 
-func diff*(feedIps, nftIps: seq[IpAddress]): seq[IpAddress] =
-  feedIps.filterIt(it notin nftIps)
+func diff*(ips1, ips2: seq[IpAddress]): seq[IpAddress] =
+  ips1.filterIt(it notin ips2)
 
 func ipsFromJson*(node: JsonNode): seq[IpAddress] =
   func walk(node: JsonNode, ips: var seq[IpAddress]) =
@@ -60,14 +60,14 @@ func ipsFromPlain*(body: string): seq[IpAddress] =
     if ip.isSome():
       result.add(ip.get())
 
-proc splitIps*(ips: seq[IpAddress]): (seq[string], seq[string]) =
-  var v4, v6: seq[string]
+func splitIps*(ips: seq[IpAddress]): (seq[IpAddress], seq[IpAddress]) =
+  var v4, v6: seq[IpAddress]
   for ip in ips:
     case ip.family
     of IPv4:
-      v4.add($ip)
+      v4.add(ip)
     of IPv6:
-      v6.add($ip)
+      v6.add(ip)
 
   result = (v4, v6)
 

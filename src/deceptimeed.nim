@@ -103,7 +103,8 @@ proc main() =
   except JsonParsingError:
     info("Bootstrapping nftables ruleset")
     try:
-      ensureRuleset(cfg)
+      let ruleset = buildRuleset(cfg)
+      ruleset.apply()
     except CatchableError as e:
       fatal(fmt"Failed to bootstrap nftables ruleset: {e.msg}")
       quit(1)

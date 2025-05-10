@@ -136,8 +136,8 @@ suite "feed":
     let (v4, v6) = splitIps(
       @["1.1.1.1", "not-an-ip", "2001:db8::1", "8.8.8.8/32", "fd00::/8"].mockIps()
     )
-    check v4 == @["1.1.1.1"]
-    check v6 == @["2001:db8::1"]
+    check v4.mapIt($it) == @["1.1.1.1"]
+    check v6.mapIt($it) == @["2001:db8::1"]
 
   test "Invalid entries are ignored":
     let ips = @["not-an-ip", "300.300.300.300", "1.2.3.4"].mockIps()
