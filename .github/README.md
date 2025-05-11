@@ -65,6 +65,10 @@ nimble install deceptimeed
 nim c -d:release -d:ssl src/deceptimeed.nim
 ```
 
+**Downloading binary**
+
+Pre-built binaries for Linux (AMD64) are available on the [release page](https://github.com/cycneuramus/deceptimeed/releases).
+
 ## Usage
 
 *Requires root.*

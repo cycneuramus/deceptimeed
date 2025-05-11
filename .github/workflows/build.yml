@@ -1,0 +1,42 @@
+name: Build and upload binary
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (without leading 'v')"
+        required: true
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup nim
+        uses: jiro4989/setup-nim-action@v2
+        with:
+          nim-version: stable
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: nimble build -d:release -d:ssl
+
+      - name: Write release version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ github.event.inputs.tag }}"
+          else
+            version=${GITHUB_REF_NAME#v}
+          fi
+
+          echo "VERSION=$version" >> $GITHUB_ENV
+
+      - name: Upload binary to release/tag
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          overwrite: true
+          tag: v${{ env.VERSION }}
+          asset_name: deceptimeed-${{ env.VERSION }}-linux-amd64
+          file: deceptimeed
