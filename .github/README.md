@@ -4,7 +4,11 @@
 > 1 : *an earned reward or wage*\
 > 2 : *a fitting return or recompense*
 
-This is a utility program for loading IP blocklists into `nftables` from HTTP endpoints exposing plain text or JSON feeds. While primarily meant as a companion helper to [Deceptifeed](https://github.com/r-smith/deceptifeed) and its `/plain` and `/json` endpoints, it should be able to support any source feed as long as either of the following criteria are met:
+This utility loads IP lists into `nftables` from HTTP endpoints serving plain text or JSON feeds, with the aim of achieving *automatic, low-level blocking* of IP addresses obtained from threat-intelligence sources such as [honeypots](<https://en.wikipedia.org/wiki/Honeypot_(computing)>).
+
+Its purpose is similar to tools like [Fail2Ban](https://github.com/fail2ban/fail2ban) or [CrowdSec](https://github.com/crowdsecurity/crowdsec), but with significantly reduced risk of false positives and no reliance on brittle, resource-intensive log parsing to distinguish malicious from legitimate traffic.
+
+While primarily meant as a companion helper to the [Deceptifeed](https://github.com/r-smith/deceptifeed) honeypot server and its `/plain` and `/json` endpoints, this tool should be able to support any source feed as long as either of the following criteria are met:
 
 - Plain text with one IP address per line
 - JSON data with IPs as string values
