@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/cycneuramus/deceptimeed/compare/v1.1.0...v1.1.1) (2025-05-11)
+
+
+### Performance Improvements
+
+* Run ~17x faster by using HashSet instead of seq for IPs ([f2d4705](https://github.com/cycneuramus/deceptimeed/commit/f2d4705203d08af324828007fff838ea3f64593a))
+
 ## [1.1.0](https://github.com/cycneuramus/deceptimeed/compare/v1.0.1...v1.1.0) (2025-05-09)
 
 
