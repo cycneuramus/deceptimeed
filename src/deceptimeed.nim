@@ -1,4 +1,5 @@
-import std/[httpclient, json, logging, net, os, parsecfg, posix, strformat, strutils]
+import
+  std/[httpclient, json, logging, net, os, parsecfg, posix, sets, strformat, strutils]
 import ./deceptimeed/[config, feed, nft]
 import pkg/argparse
 
@@ -43,8 +44,8 @@ proc refresh(http: HttpClient, feedUrl: string, cfg: config.Config) =
   let
     nftState = cfg.table.state()
     curIps = nftState.ipsFromJson()
-    addIps = feedIps.diff(curIps)
-    delIps = curIps.diff(feedIps)
+    addIps = difference(feedIps, curIps)
+    delIps = difference(curIps, feedIps)
 
   if addIps.len == 0 and delIps.len == 0:
     debug("Blocklist unchanged")

@@ -1,6 +1,8 @@
 import
-  std/
-    [json, logging, net, os, osproc, sequtils, streams, strformat, strutils, tempfiles]
+  std/[
+    json, logging, net, os, osproc, sequtils, sets, streams, strformat, strutils,
+    tempfiles,
+  ]
 import ./[config, feed]
 
 const nftCmd = "nft"
@@ -49,23 +51,26 @@ func buildRuleset*(cfg: Config): string =
     """.dedent() %
     [cfg.table, cfg.set4, cfg.set6, cfg.chain, cfg.prio]
 
-func buildBatch*(addIps, delIps: seq[IpAddress], cfg: Config): string =
-  let (del4, del6) = delIps.splitIps()
-  let (add4, add6) = addIps.splitIps()
+func buildBatch*(addIps, delIps: HashSet[IpAddress], cfg: Config): string =
+  let (del4, del6) = block:
+    let (del4HashSet, del6HashSet) = delIps.splitIps()
+    (
+      del4HashSet.toSeq().mapIt($it).join(", "),
+      del6HashSet.toSeq().mapIt($it).join(", "),
+    )
+
+  let (add4, add6) = block:
+    let (add4HashSet, add6HashSet) = addIps.splitIps()
+    (
+      add4HashSet.toSeq().mapIt($it).join(", "),
+      add6HashSet.toSeq().mapIt($it).join(", "),
+    )
 
   if del4.len > 0:
-    result.add(
-      &"delete element inet {cfg.table} {cfg.set4} {{ {del4.mapIt($it).join(\", \")} }}\n"
-    )
+    result.add(&"delete element inet {cfg.table} {cfg.set4} {{ {del4} }}\n")
   if del6.len > 0:
-    result.add(
-      &"delete element inet {cfg.table} {cfg.set6} {{ {del6.mapIt($it).join(\", \")} }}\n"
-    )
+    result.add(&"delete element inet {cfg.table} {cfg.set6} {{ {del6} }}\n")
   if add4.len > 0:
-    result.add(
-      &"add element inet {cfg.table} {cfg.set4} {{ {add4.mapIt($it).join(\", \")} }}\n"
-    )
+    result.add(&"add element inet {cfg.table} {cfg.set4} {{ {add4} }}\n")
   if add6.len > 0:
-    result.add(
-      &"add element inet {cfg.table} {cfg.set6} {{ {add6.mapIt($it).join(\", \")} }}\n"
-    )
+    result.add(&"add element inet {cfg.table} {cfg.set6} {{ {add6} }}\n")

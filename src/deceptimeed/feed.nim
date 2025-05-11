@@ -1,4 +1,4 @@
-import std/[httpclient, json, logging, net, options, sequtils, strformat, strutils, uri]
+import std/[httpclient, json, logging, net, options, sets, strformat, strutils, uri]
 
 # TODO: support CIDRs
 template parseIp*(str: string): Option[IpAddress] =
@@ -30,48 +30,45 @@ proc download*(http: HttpClient, url: string): string =
       HttpRequestError, fmt"HTTP request failed with code: {response.code()}"
     )
 
-func diff*(ips1, ips2: seq[IpAddress]): seq[IpAddress] =
-  ips1.filterIt(it notin ips2)
+func ipsFromJson*(node: JsonNode): HashSet[IpAddress] =
+  var ips = initHashSet[IpAddress]()
 
-func ipsFromJson*(node: JsonNode): seq[IpAddress] =
-  func walk(node: JsonNode, ips: var seq[IpAddress]) =
+  func walk(node: JsonNode) =
     case node.kind
     of JString:
       let parsedIp = node.str.parseIp()
       if parsedIp.isSome():
-        ips.add(parsedIp.get())
+        ips.incl(parsedIp.get())
     of JArray:
       for i in node.items:
-        walk(i, ips)
+        walk(i)
     of JObject:
       for _, v in node:
-        walk(v, ips)
+        walk(v)
     else:
       discard
 
-  var ips: seq[IpAddress]
-  node.walk(ips)
-
+  node.walk()
   return ips
 
-func ipsFromPlain*(body: string): seq[IpAddress] =
+func ipsFromPlain*(body: string): HashSet[IpAddress] =
   for line in body.splitLines():
     let ip = line.parseIp()
     if ip.isSome():
-      result.add(ip.get())
+      result.incl(ip.get())
 
-func splitIps*(ips: seq[IpAddress]): (seq[IpAddress], seq[IpAddress]) =
-  var v4, v6: seq[IpAddress]
+func splitIps*(ips: HashSet[IpAddress]): (HashSet[IpAddress], HashSet[IpAddress]) =
+  var v4, v6: HashSet[IpAddress]
   for ip in ips:
     case ip.family
     of IPv4:
-      v4.add(ip)
+      v4.incl(ip)
     of IPv6:
-      v6.add(ip)
+      v6.incl(ip)
 
   result = (v4, v6)
 
-proc parseFeed*(body: string): seq[IpAddress] =
+proc parseFeed*(body: string): HashSet[IpAddress] =
   let feed = body.strip()
   if feed.len == 0:
     return
@@ -80,7 +77,7 @@ proc parseFeed*(body: string): seq[IpAddress] =
     try:
       let json = feed.parseJson()
       debug("Parsing JSON feed")
-      json.ipsFromJson().deduplicate()
+      json.ipsFromJson()
     except JsonParsingError:
       debug("Parsing plain text feed")
-      feed.ipsFromPlain().deduplicate()
+      feed.ipsFromPlain()

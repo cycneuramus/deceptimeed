@@ -1,15 +1,15 @@
-import std/[json, net, sequtils, strformat, strutils, tempfiles, unittest]
+import std/[json, net, sequtils, sets, strformat, strutils, tempfiles, unittest]
 import ../src/deceptimeed/[config, feed, nft]
 import ../src/deceptimeed
 import pkg/argparse
 
 # Test helper: uses the real `parseIp` but returns only valid IPs to let tests
 # use mixed (valid + garbage) data without Option-handling boilerplate
-func mockIps(strs: seq[string]): seq[IpAddress] =
+func mockIps(strs: seq[string]): HashSet[IpAddress] =
   for str in strs:
     let ip = str.parseIp()
     if ip.isSome():
-      result.add(ip.get())
+      result.incl(ip.get())
 
 suite "CLI argument parsing":
   test "Valid URL":
@@ -118,30 +118,30 @@ suite "feed":
 
   test "Plain feed":
     let ips = "1.1.1.1\ntrash\n2.2.2.2\n1.1.1.1\n"
-    check parseFeed(ips).mapIt($it) == @["1.1.1.1", "2.2.2.2"]
+    check parseFeed(ips) == @["1.1.1.1", "2.2.2.2"].mockIps()
 
   test "Plain feed with line feeds":
     let ips = "1.1.1.1\r\ntrash\r\n2.2.2.2\r\n1.1.1.1\r\n"
-    check parseFeed(ips).mapIt($it) == @["1.1.1.1", "2.2.2.2"]
+    check parseFeed(ips) == @["1.1.1.1", "2.2.2.2"].mockIps()
 
   test "JSON feed":
     let json = """{ "a": "10.0.0.1","b": ["2001:db8::1", {"x":"8.8.8.8"}] }"""
-    check parseFeed(json).mapIt($it) == @["10.0.0.1", "2001:db8::1", "8.8.8.8"]
+    check parseFeed(json) == @["10.0.0.1", "2001:db8::1", "8.8.8.8"].mockIps()
 
   test "JSON feed with leading whitespace":
     let json = "\n  [\"1.1.1.1\", \"2.2.2.2\", \"1.1.1.1\"]"
-    check parseFeed(json).mapIt($it) == @["1.1.1.1", "2.2.2.2"]
+    check parseFeed(json) == @["1.1.1.1", "2.2.2.2"].mockIps()
 
   test "Split IPs into v4, v6":
     let (v4, v6) = splitIps(
       @["1.1.1.1", "not-an-ip", "2001:db8::1", "8.8.8.8/32", "fd00::/8"].mockIps()
     )
-    check v4.mapIt($it) == @["1.1.1.1"]
-    check v6.mapIt($it) == @["2001:db8::1"]
+    check v4 == @["1.1.1.1"].mockIps()
+    check v6 == @["2001:db8::1"].mockIps()
 
   test "Invalid entries are ignored":
     let ips = @["not-an-ip", "300.300.300.300", "1.2.3.4"].mockIps()
-    check ips.mapIt($it) == @["1.2.3.4"]
+    check ips == @["1.2.3.4"].mockIps()
 
 suite "nft":
   let cfg = parseOrDefault("/etc/deceptimeed.conf")
@@ -161,7 +161,7 @@ suite "nft":
     check batch == expected
 
   test "Empty batch":
-    check buildBatch(@[], @[], cfg) == ""
+    check buildBatch(initHashSet[IpAddress](), initHashSet[IpAddress](), cfg) == ""
 
   test "Extract nftables IPs":
     let mockNftOutput =
@@ -189,12 +189,10 @@ suite "nft":
         ]
       }
 
-    check mockNftOutput.ipsFromJson().mapIt($it) == [
-      "1.2.3.4", "5.6.7.8", "192.168.0.1"
-    ]
+    check mockNftOutput.ipsFromJson() == @["1.2.3.4", "5.6.7.8", "192.168.0.1"].mockIps()
 
   test "Yield only new IPs":
     let feedIps = @["10.0.0.1", "192.168.0.1", "203.0.113.5"].mockIps()
     let nftIps = @["192.168.0.1", "198.51.100.7"].mockIps()
-    let newIps = feedIps.diff(nftIps)
-    check newIps.mapIt($it) == @["10.0.0.1", "203.0.113.5"]
+    let newIps = difference(feedIps, nftIps)
+    check newIps.toSeq().mapIt($it) == @["10.0.0.1", "203.0.113.5"]
