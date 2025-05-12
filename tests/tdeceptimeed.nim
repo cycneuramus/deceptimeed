@@ -195,4 +195,4 @@ suite "nft":
     let feedIps = @["10.0.0.1", "192.168.0.1", "203.0.113.5"].mockIps()
     let nftIps = @["192.168.0.1", "198.51.100.7"].mockIps()
     let newIps = difference(feedIps, nftIps)
-    check newIps.toSeq().mapIt($it) == @["10.0.0.1", "203.0.113.5"]
+    check newIps == @["10.0.0.1", "203.0.113.5"].mockIps()
