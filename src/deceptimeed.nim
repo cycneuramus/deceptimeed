@@ -26,12 +26,7 @@ template buildParser*(): untyped =
 
 proc refresh(http: HttpClient, feedUrl: string, cfg: config.Config) =
   let
-    feed =
-      try:
-        http.download(feedUrl)
-      except HttpRequestError as e:
-        error(e.msg)
-        return
+    feed = http.download(feedUrl)
     feedIps = feed.parseFeed()
 
   if feedIps.len == 0:
@@ -113,9 +108,8 @@ proc main() =
   while true:
     try:
       refresh(http, args.feedUrl, cfg)
-    except FeedError as e:
-      error(e.msg)
-    except NftError as e:
+    except FeedError, HttpRequestError, NftError:
+      let e = getCurrentException()
       error(e.msg)
     except CatchableError as e:
       fatal(fmt"Refresh failed: {e.msg}")
