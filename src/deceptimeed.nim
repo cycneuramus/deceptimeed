@@ -3,7 +3,13 @@ import
 import ./deceptimeed/[config, feed, nft]
 import pkg/argparse
 
-type FeedError = object of CatchableError
+type
+  Feed = object
+    url: string
+    client: HttpClient
+    interval: int
+
+  FeedError = object of CatchableError
 
 const version = staticRead("../deceptimeed.nimble").newStringStream.loadConfig
   .getSectionValue("", "version")
@@ -24,10 +30,10 @@ template buildParser*(): untyped =
       default = some("/etc/deceptimeed.conf"),
     )
 
-proc refresh(http: HttpClient, feedUrl: string, cfg: config.Config) =
+proc refresh(feed: Feed, cfg: config.Config) =
   let
-    feed = http.download(feedUrl)
-    feedIps = feed.parseFeed()
+    body = feed.client.download(feed.url)
+    feedIps = body.parseFeed()
 
   if feedIps.len == 0:
     info("No IPs in feed")
@@ -90,7 +96,10 @@ proc main() =
 
   let
     cfg = args.config.parseOrDefault()
-    http = newHttpClient(timeout = cfg.httpTimeoutMs)
+    client = newHttpClient(timeout = cfg.httpTimeoutMs)
+    feed = Feed(
+      url: args.feedUrl, client: client, interval: args.interval.parseInt() * 60 * 1000
+    )
 
   debug("Checking for presence of ruleset")
   try:
@@ -107,7 +116,7 @@ proc main() =
 
   while true:
     try:
-      refresh(http, args.feedUrl, cfg)
+      feed.refresh(cfg)
     except FeedError, HttpRequestError, NftError:
       let e = getCurrentException()
       error(e.msg)
@@ -119,7 +128,7 @@ proc main() =
       break
 
     debug(fmt"Sleeping for {args.interval} minutes...")
-    sleep(args.interval.parseInt() * 60 * 1000)
+    sleep(feed.interval)
 
 when isMainModule:
   main()
