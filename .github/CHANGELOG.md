@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/cycneuramus/deceptimeed/compare/v1.1.1...v1.1.2) (2025-06-02)
+
+
+### Bug Fixes
+
+* Catch NftError in state check ([99df1f0](https://github.com/cycneuramus/deceptimeed/commit/99df1f0e1e10f5b6b69142263ca60338e9903fb9))
+
 ## [1.1.1](https://github.com/cycneuramus/deceptimeed/compare/v1.1.0...v1.1.1) (2025-05-11)
 
 
