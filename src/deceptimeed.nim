@@ -105,7 +105,7 @@ proc main() =
   try:
     discard cfg.table.state()
     debug("Ruleset already present")
-  except JsonParsingError:
+  except JsonParsingError, NftError:
     info("Bootstrapping nftables ruleset")
     try:
       let ruleset = buildRuleset(cfg)
