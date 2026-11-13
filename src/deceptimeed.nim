@@ -91,8 +91,9 @@ proc main() =
   if not args.feedUrl.isValidUrl():
     fatal(fmt"Invalid url: {args.feedUrl}")
     quit(1)
-  if not args.interval.parseInt() > 0:
+  if args.interval.parseInt() <= 0:
     fatal(fmt"Invalid interval: {args.interval}")
+    quit(1)
 
   let
     cfg = args.config.parseOrDefault()
