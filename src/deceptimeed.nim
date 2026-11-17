@@ -36,8 +36,7 @@ proc refresh(url: string, cfg: config.Config) =
       newException(FeedError, fmt"IP feed exceeds maximum size of {cfg.maxElems} items")
 
   let
-    nftState = cfg.table.state()
-    curIps = nftState.ipsFromJson()
+    curIps = cfg.blockedIps()
     addIps = difference(feedIps, curIps)
     delIps = difference(curIps, feedIps)
 
@@ -107,10 +106,7 @@ proc main() =
     quit(1)
 
   debug("Checking for presence of ruleset")
-  try:
-    discard cfg.table.state()
-    debug("Ruleset already present")
-  except NftError:
+  if not cfg.table.tableExists():
     info("Bootstrapping nftables ruleset")
     try:
       let ruleset = buildRuleset(cfg)
@@ -131,7 +127,7 @@ proc main() =
       break
 
     debug(fmt"Sleeping for {args.interval} minutes...")
-    sleep(interval)
+    sleep(interval * 60 * 1000)
 
 when isMainModule:
   main()

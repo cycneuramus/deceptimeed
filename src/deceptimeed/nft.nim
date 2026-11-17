@@ -1,9 +1,9 @@
 import
   std/[
-    json, logging, net, os, osproc, sequtils, sets, streams, strformat, strutils,
-    tempfiles,
+    json, logging, net, options, os, osproc, sequtils, sets, streams, strformat,
+    strutils, tempfiles,
   ]
-import ./config
+import ./[config, feed]
 
 const nftCmd* = "nft"
 
@@ -22,9 +22,25 @@ proc nft*(args: seq[string]): string =
   if exitCode != 0:
     raise newException(NftError, fmt"{nftCmd} exited with code {exitCode}: {result}")
 
-proc state*(tbl: string): JsonNode =
-  debug(fmt"Getting nft table '{tbl}'")
-  nft(@["-j", "list", "table", "inet", tbl]).parseJson()
+proc tableExists*(tbl: string): bool =
+  try:
+    discard nft(@["list", "table", "inet", tbl])
+    true
+  except NftError:
+    false
+
+func ipsFromState(state: JsonNode, cfg: Config): HashSet[IpAddress] =
+  for item in state{"nftables"}.getElems():
+    let blockSet = item{"set"}
+    if blockSet{"name"}.getStr() in [cfg.set4, cfg.set6]:
+      for elem in blockSet{"elem"}.getElems():
+        let ip = elem.getStr().parseIp()
+        if ip.isSome():
+          result.incl(ip.get())
+
+proc blockedIps*(cfg: Config): HashSet[IpAddress] =
+  let table = nft(@["-j", "list", "table", "inet", cfg.table])
+  table.parseJson().ipsFromState(cfg)
 
 proc apply*(batch: string) =
   let (tmpF, tmpFp) = createTempFile("deceptimeed", "")
