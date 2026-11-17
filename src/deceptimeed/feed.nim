@@ -53,17 +53,6 @@ func ipsFromPlain*(body: string): HashSet[IpAddress] =
     if ip.isSome():
       result.incl(ip.get())
 
-func splitIps*(ips: HashSet[IpAddress]): (HashSet[IpAddress], HashSet[IpAddress]) =
-  var v4, v6: HashSet[IpAddress]
-  for ip in ips:
-    case ip.family
-    of IPv4:
-      v4.incl(ip)
-    of IPv6:
-      v6.incl(ip)
-
-  result = (v4, v6)
-
 proc parseFeed*(body: string): HashSet[IpAddress] =
   let feed = body.strip()
   if feed.len == 0:

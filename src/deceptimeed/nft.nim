@@ -3,7 +3,7 @@ import
     json, logging, net, os, osproc, sequtils, sets, streams, strformat, strutils,
     tempfiles,
   ]
-import ./[config, feed]
+import ./config
 
 const nftCmd* = "nft"
 
@@ -48,25 +48,9 @@ func buildRuleset*(cfg: Config): string =
     [cfg.table, cfg.set4, cfg.set6, cfg.chain, cfg.prio]
 
 func buildBatch*(addIps, delIps: HashSet[IpAddress], cfg: Config): string =
-  let (del4, del6) = block:
-    let (del4HashSet, del6HashSet) = delIps.splitIps()
-    (
-      del4HashSet.toSeq().mapIt($it).join(", "),
-      del6HashSet.toSeq().mapIt($it).join(", "),
-    )
-
-  let (add4, add6) = block:
-    let (add4HashSet, add6HashSet) = addIps.splitIps()
-    (
-      add4HashSet.toSeq().mapIt($it).join(", "),
-      add6HashSet.toSeq().mapIt($it).join(", "),
-    )
-
-  if del4.len > 0:
-    result.add(&"delete element inet {cfg.table} {cfg.set4} {{ {del4} }}\n")
-  if del6.len > 0:
-    result.add(&"delete element inet {cfg.table} {cfg.set6} {{ {del6} }}\n")
-  if add4.len > 0:
-    result.add(&"add element inet {cfg.table} {cfg.set4} {{ {add4} }}\n")
-  if add6.len > 0:
-    result.add(&"add element inet {cfg.table} {cfg.set6} {{ {add6} }}\n")
+  for (verb, ips) in [("delete", delIps), ("add", addIps)]:
+    for (family, setName) in [(IPv4, cfg.set4), (IPv6, cfg.set6)]:
+      let elems = ips.toSeq().filterIt(it.family == family).mapIt($it)
+      if elems.len > 0:
+        let list = elems.join(", ")
+        result.add(&"{verb} element inet {cfg.table} {setName} {{ {list} }}\n")

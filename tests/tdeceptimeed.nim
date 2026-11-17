@@ -132,13 +132,6 @@ suite "feed":
     let json = "\n  [\"1.1.1.1\", \"2.2.2.2\", \"1.1.1.1\"]"
     check parseFeed(json) == @["1.1.1.1", "2.2.2.2"].mockIps()
 
-  test "Split IPs into v4, v6":
-    let (v4, v6) = splitIps(
-      @["1.1.1.1", "not-an-ip", "2001:db8::1", "8.8.8.8/32", "fd00::/8"].mockIps()
-    )
-    check v4 == @["1.1.1.1"].mockIps()
-    check v6 == @["2001:db8::1"].mockIps()
-
   test "Invalid entries are ignored":
     let ips = @["not-an-ip", "300.300.300.300", "1.2.3.4"].mockIps()
     check ips == @["1.2.3.4"].mockIps()
