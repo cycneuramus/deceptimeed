@@ -1,5 +1,4 @@
-import
-  std/[httpclient, json, logging, net, os, parsecfg, posix, sets, strformat, strutils]
+import std/[httpclient, logging, net, os, parsecfg, posix, sets, strformat, strutils]
 import ./deceptimeed/[config, feed, nft]
 import pkg/argparse
 
@@ -85,6 +84,9 @@ proc main() =
     )
   logger.addHandler()
 
+  if findExe(nftCmd).len == 0:
+    fatal(fmt"'{nftCmd}' executable not found")
+    quit(1)
   if getuid() != Uid(0):
     fatal("Must run as root")
     quit(1)
@@ -96,7 +98,12 @@ proc main() =
     quit(1)
 
   let
-    cfg = args.config.parseOrDefault()
+    cfg =
+      try:
+        args.config.parseOrDefault()
+      except CatchableError as e:
+        fatal(fmt"Invalid config {args.config}: {e.msg}")
+        quit(1)
     client = newHttpClient(timeout = cfg.httpTimeoutMs)
     feed = Feed(
       url: args.feedUrl, client: client, interval: args.interval.parseInt() * 60 * 1000
@@ -106,7 +113,7 @@ proc main() =
   try:
     discard cfg.table.state()
     debug("Ruleset already present")
-  except JsonParsingError, NftError:
+  except NftError:
     info("Bootstrapping nftables ruleset")
     try:
       let ruleset = buildRuleset(cfg)
@@ -118,12 +125,10 @@ proc main() =
   while true:
     try:
       feed.refresh(cfg)
-    except FeedError, HttpRequestError, NftError:
-      let e = getCurrentException()
-      error(e.msg)
     except CatchableError as e:
-      fatal(fmt"Refresh failed: {e.msg}")
-      quit(1)
+      error(fmt"Refresh failed: {e.msg}")
+      if args.oneshot:
+        quit(1)
 
     if args.oneshot:
       break

@@ -5,7 +5,7 @@ import
   ]
 import ./[config, feed]
 
-const nftCmd = "nft"
+const nftCmd* = "nft"
 
 type NftError* = object of CatchableError
 
@@ -24,11 +24,7 @@ proc nft*(args: seq[string]): string =
 
 proc state*(tbl: string): JsonNode =
   debug(fmt"Getting nft table '{tbl}'")
-  let output = nft(@["-j", "list", "table", "inet", tbl])
-  try:
-    output.parseJson()
-  except JsonParsingError:
-    raise
+  nft(@["-j", "list", "table", "inet", tbl]).parseJson()
 
 proc apply*(batch: string) =
   let (tmpF, tmpFp) = createTempFile("deceptimeed", "")

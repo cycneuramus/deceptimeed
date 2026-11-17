@@ -14,13 +14,9 @@ func isValidUrl*(url: string): bool =
 
 proc download*(http: HttpClient, url: string): string =
   debug(fmt"Downloading IP feed at {url}")
-  let response =
-    try:
-      http.request(url, httpMethod = HttpGet)
-    except TimeoutError as e:
-      raise newException(HttpRequestError, fmt"HTTP request timed out: {e.msg}")
-    finally:
-      http.close()
+  let response = http.request(url, httpMethod = HttpGet)
+  defer:
+    http.close()
 
   case response.code()
   of Http200:
