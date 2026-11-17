@@ -1,9 +1,9 @@
 import std/[httpclient, json, logging, net, options, sets, strformat, strutils, uri]
 
 # TODO: support CIDRs
-template parseIp*(str: string): Option[IpAddress] =
+func parseIp*(str: string): Option[IpAddress] =
   try:
-    let ip = str.parseIpAddress()
+    let ip = str.strip().parseIpAddress()
     some(ip)
   except ValueError:
     none(IpAddress)
