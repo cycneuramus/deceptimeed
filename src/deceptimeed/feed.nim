@@ -12,19 +12,18 @@ func isValidUrl*(url: string): bool =
   let uri = url.parseUri()
   return uri.scheme in ["http", "https"] and uri.isAbsolute()
 
-proc download*(http: HttpClient, url: string): string =
+proc download*(url: string, timeoutMs: int): string =
   debug(fmt"Downloading IP feed at {url}")
-  let response = http.request(url, httpMethod = HttpGet)
+  let http = newHttpClient(timeout = timeoutMs)
   defer:
     http.close()
 
-  case response.code()
-  of Http200:
-    return response.body()
-  else:
+  let response = http.request(url, httpMethod = HttpGet)
+  if response.code() != Http200:
     raise newException(
       HttpRequestError, fmt"HTTP request failed with code: {response.code()}"
     )
+  response.body()
 
 func ipsFromJson*(node: JsonNode): HashSet[IpAddress] =
   var ips = initHashSet[IpAddress]()

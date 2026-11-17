@@ -1,14 +1,8 @@
-import std/[httpclient, logging, net, os, parsecfg, posix, sets, strformat, strutils]
+import std/[logging, net, os, parsecfg, posix, sets, strformat, strutils]
 import ./deceptimeed/[config, feed, nft]
 import pkg/argparse
 
-type
-  Feed = object
-    url: string
-    client: HttpClient
-    interval: int
-
-  FeedError = object of CatchableError
+type FeedError = object of CatchableError
 
 const version = staticRead("../deceptimeed.nimble").newStringStream.loadConfig
   .getSectionValue("", "version")
@@ -29,9 +23,9 @@ template buildParser*(): untyped =
       default = some("/etc/deceptimeed.conf"),
     )
 
-proc refresh(feed: Feed, cfg: config.Config) =
+proc refresh(url: string, cfg: config.Config) =
   let
-    body = feed.client.download(feed.url)
+    body = url.download(cfg.httpTimeoutMs)
     feedIps = body.parseFeed()
 
   if feedIps.len == 0:
@@ -93,9 +87,6 @@ proc main() =
   if not args.feedUrl.isValidUrl():
     fatal(fmt"Invalid url: {args.feedUrl}")
     quit(1)
-  if args.interval.parseInt() <= 0:
-    fatal(fmt"Invalid interval: {args.interval}")
-    quit(1)
 
   let
     cfg =
@@ -104,10 +95,16 @@ proc main() =
       except CatchableError as e:
         fatal(fmt"Invalid config {args.config}: {e.msg}")
         quit(1)
-    client = newHttpClient(timeout = cfg.httpTimeoutMs)
-    feed = Feed(
-      url: args.feedUrl, client: client, interval: args.interval.parseInt() * 60 * 1000
-    )
+    interval =
+      try:
+        args.interval.parseInt()
+      except CatchableError as e:
+        fatal(fmt"Error parsing interval {args.interval}: {e.msg}")
+        quit(1)
+
+  if interval <= 0:
+    fatal(fmt"Invalid interval: {interval}")
+    quit(1)
 
   debug("Checking for presence of ruleset")
   try:
@@ -124,7 +121,7 @@ proc main() =
 
   while true:
     try:
-      feed.refresh(cfg)
+      args.feedUrl.refresh(cfg)
     except CatchableError as e:
       error(fmt"Refresh failed: {e.msg}")
       if args.oneshot:
@@ -134,7 +131,7 @@ proc main() =
       break
 
     debug(fmt"Sleeping for {args.interval} minutes...")
-    sleep(feed.interval)
+    sleep(interval)
 
 when isMainModule:
   main()
