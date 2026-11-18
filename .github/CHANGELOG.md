@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.3](https://github.com/cycneuramus/deceptimeed/compare/v1.1.2...v1.1.3) (2026-11-18)
+
+
+### Bug Fixes
+
+* Bail out on invalid interval argument ([9c52e61](https://github.com/cycneuramus/deceptimeed/commit/9c52e6196a3c3df78632f1eeee29ab769151af2d))
+* Drop 'flags interval' from nft since we don't support ranges ([26628d8](https://github.com/cycneuramus/deceptimeed/commit/26628d846a1dcfa8262810d62131fc4a5bf3699f))
+* Handle meaningful errors explicitly ([33447fc](https://github.com/cycneuramus/deceptimeed/commit/33447fc491d70c92cbc9befef401ddebc9527979))
+* Read blocked IPs from nft set elements only ([e1529a6](https://github.com/cycneuramus/deceptimeed/commit/e1529a6bf662225662475911513b0a24ba8f7792))
+* Trim whitespace on ip feed lines ([f14d6e3](https://github.com/cycneuramus/deceptimeed/commit/f14d6e3c2a32cc686d2337e383aad4e6a8808d25))
+
 ## [1.1.2](https://github.com/cycneuramus/deceptimeed/compare/v1.1.1...v1.1.2) (2025-06-02)
 
 
