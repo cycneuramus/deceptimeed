@@ -29,7 +29,7 @@ proc tableExists*(tbl: string): bool =
   except NftError:
     false
 
-func ipsFromState(state: JsonNode, cfg: Config): HashSet[IpAddress] =
+func ipsFromState*(state: JsonNode, cfg: Config): HashSet[IpAddress] =
   for item in state{"nftables"}.getElems():
     let blockSet = item{"set"}
     if blockSet{"name"}.getStr() in [cfg.set4, cfg.set6]:

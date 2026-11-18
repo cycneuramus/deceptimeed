@@ -1,4 +1,4 @@
-import std/[json, net, sequtils, sets, strformat, strutils, tempfiles, unittest]
+import std/[json, net, os, sets, strformat, strutils, tempfiles, unittest]
 import ../src/deceptimeed/[config, feed, nft]
 import ../src/deceptimeed
 import pkg/argparse
@@ -132,12 +132,15 @@ suite "feed":
     let json = "\n  [\"1.1.1.1\", \"2.2.2.2\", \"1.1.1.1\"]"
     check parseFeed(json) == @["1.1.1.1", "2.2.2.2"].mockIps()
 
+  test "Empty feed":
+    check parseFeed("  \n").len == 0
+
   test "Invalid entries are ignored":
     let ips = @["not-an-ip", "300.300.300.300", "1.2.3.4"].mockIps()
     check ips == @["1.2.3.4"].mockIps()
 
 suite "nft":
-  let cfg = parseOrDefault("/etc/deceptimeed.conf")
+  let cfg = defaultConfig
 
   test "Build incremental batch":
     let
@@ -153,11 +156,15 @@ suite "nft":
 
     check batch == expected
 
+  test "Batch skips empty sections":
+    let batch = buildBatch(@["1.1.1.1"].mockIps(), initHashSet[IpAddress](), cfg)
+    check batch == fmt"add element inet {cfg.table} {cfg.set4} {{ 1.1.1.1 }}" & "\n"
+
   test "Empty batch":
     check buildBatch(initHashSet[IpAddress](), initHashSet[IpAddress](), cfg) == ""
 
   test "Extract nftables IPs":
-    let mockNftOutput =
+    let state =
       %*{
         "nftables": [
           {
@@ -170,21 +177,37 @@ suite "nft":
           {
             "set": {
               "family": "inet",
-              "name": "bad_ip4",
-              "table": "blocklist",
+              "name": cfg.set4,
+              "table": cfg.table,
               "type": "ipv4_addr",
               "handle": 1,
               "comment": "Deceptimeed",
               "elem": ["1.2.3.4", "5.6.7.8", "192.168.0.1"],
             }
           },
+          {
+            "set": {
+              "family": "inet",
+              "name": cfg.set6,
+              "table": cfg.table,
+              "type": "ipv6_addr",
+              "handle": 2,
+              "comment": "Deceptimeed",
+              "elem": ["2001:db8::1"],
+            }
+          },
         ]
       }
 
-    check mockNftOutput.ipsFromJson() == @["1.2.3.4", "5.6.7.8", "192.168.0.1"].mockIps()
+    check ipsFromState(state, cfg) ==
+      @["1.2.3.4", "5.6.7.8", "192.168.0.1", "2001:db8::1"].mockIps()
 
-  test "Yield only new IPs":
-    let feedIps = @["10.0.0.1", "192.168.0.1", "203.0.113.5"].mockIps()
-    let nftIps = @["192.168.0.1", "198.51.100.7"].mockIps()
-    let newIps = difference(feedIps, nftIps)
-    check newIps == @["10.0.0.1", "203.0.113.5"].mockIps()
+  test "Ignore IPs in unrelated nftables sets":
+    let state =
+      %*{"nftables": [{"set": {"name": "somebody_elses_set", "elem": ["9.9.9.9"]}}]}
+    check ipsFromState(state, cfg).len == 0
+
+  test "Extract IPs from an empty nftables set":
+    # nft omits the "elem" key entirely when a set has no elements
+    let state = %*{"nftables": [{"set": {"name": cfg.set4}}]}
+    check ipsFromState(state, cfg).len == 0
