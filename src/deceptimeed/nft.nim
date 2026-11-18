@@ -55,8 +55,8 @@ func buildRuleset*(cfg: Config): string =
   result =
     """
       add table inet $1
-      add set   inet $1 $2 { type ipv4_addr; flags interval; comment "Deceptimeed"; }
-      add set   inet $1 $3 { type ipv6_addr; flags interval; comment "Deceptimeed"; }
+      add set   inet $1 $2 { type ipv4_addr; comment "Deceptimeed"; }
+      add set   inet $1 $3 { type ipv6_addr; comment "Deceptimeed"; }
       add chain inet $1 $4 { type filter hook prerouting priority $5; policy accept; }
       add rule  inet $1 $4 ip  saddr @$2 drop
       add rule  inet $1 $4 ip6 saddr @$3 drop

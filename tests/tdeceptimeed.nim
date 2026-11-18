@@ -175,7 +175,6 @@ suite "nft":
               "type": "ipv4_addr",
               "handle": 1,
               "comment": "Deceptimeed",
-              "flags": ["interval"],
               "elem": ["1.2.3.4", "5.6.7.8", "192.168.0.1"],
             }
           },
